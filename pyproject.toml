@@ -32,3 +32,6 @@ target-version = "py312"
   [tool.ruff.format]
   docstring-code-format = true
   quote-style           = "double"
+
+[tool.pyright]
+reportAny = false
