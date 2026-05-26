@@ -13,3 +13,5 @@ __all__ = [
     "get_logger",
     "setup",
 ]
+
+__version__ = "0.1.0"
