@@ -15,6 +15,7 @@ if ! gh repo view "${REPO}" &>/dev/null; then
 fi
 
 gh repo edit "${REPO}" \
+  --default-branch="${BRANCH}" \
   --description="Schema on read based logging" \
   --enable-wiki=false \
   --enable-projects=false \
