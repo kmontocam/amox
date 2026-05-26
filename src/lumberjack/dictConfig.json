@@ -1,0 +1,30 @@
+{
+  "$schema": "../../schema/dictConfig.schema.json",
+  "disable_existing_loggers": false,
+  "formatters": {
+    "lumberjack": {
+      "()": "lumberjack.create_formatter"
+    }
+  },
+  "handlers": {
+    "lumberjack": {
+      "class": "logging.StreamHandler",
+      "formatter": "lumberjack",
+      "stream": "ext://sys.stderr"
+    },
+    "lumberjack.queue_handler": {
+      "class": "lumberjack.handlers.LiveQueueHandler",
+      "handlers": [
+        "lumberjack"
+      ],
+      "respect_handler_level": true
+    }
+  },
+  "root": {
+    "handlers": [
+      "lumberjack.queue_handler"
+    ],
+    "level": "INFO"
+  },
+  "version": 1
+}
