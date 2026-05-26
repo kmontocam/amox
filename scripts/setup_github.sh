@@ -24,6 +24,7 @@ gh repo edit "${REPO}" \
   --enable-merge-commit=false \
   --enable-rebase-merge=false
 
+# create release environment with custom branch policies
 gh api "repos/${REPO}/environments/${ENVIRONMENT}" -X PUT --silent --input - <<EOF
 {
   "deployment_branch_policy": {
@@ -37,6 +38,7 @@ existing_branch=$(gh api "repos/${REPO}/environments/${ENVIRONMENT}/deployment-b
   --jq ".branch_policies[] | select(.name == \"${BRANCH}\") | .name")
 
 if [ -z "${existing_branch}" ]; then
+  # allow main branch to deploy to `release` environment
   gh api "repos/${REPO}/environments/${ENVIRONMENT}/deployment-branch-policies" -X POST --silent \
     -f name="${BRANCH}"
 fi
@@ -45,6 +47,7 @@ existing_tag=$(gh api "repos/${REPO}/environments/${ENVIRONMENT}/deployment-bran
   --jq ".branch_policies[] | select(.name == \"${TAG_PATTERN}\" and .type == \"tag\") | .name")
 
 if [ -z "${existing_tag}" ]; then
+  # allow v* tags to deploy to release environment
   gh api "repos/${REPO}/environments/${ENVIRONMENT}/deployment-branch-policies" -X POST --silent \
     -f name="${TAG_PATTERN}" -f type="tag"
 fi
@@ -53,6 +56,7 @@ existing_protection=$(gh api "repos/${REPO}/tags/protection" \
   --jq ".[] | select(.pattern == \"${TAG_PATTERN}\") | .pattern" 2>/dev/null || true)
 
 if [ -z "${existing_protection}" ]; then
+  # protect v* tags from deletion/overwrite by non-admins
   gh api "repos/${REPO}/tags/protection" -X POST --silent -f pattern="${TAG_PATTERN}"
 fi
 
