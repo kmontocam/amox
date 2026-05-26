@@ -25,6 +25,7 @@ dev = [
 
 [tool.pytest.ini_options]
 addopts    = ["-p", "no:logging"]
+markers    = ["functional: subprocess-based full API tests"]
 pythonpath = ["."]
 testpaths  = ["tests"]
 
