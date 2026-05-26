@@ -1,0 +1,37 @@
+repos:
+  - hooks:
+      - id: ruff-format
+        name: ruff format
+      - args:
+          - --fix
+        id: ruff-check
+        name: ruff check
+    repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.14
+  - hooks:
+      - entry: uv run ty check
+        id: ty
+        language: system
+        name: ty type check
+        pass_filenames: false
+        types:
+          - python
+      - entry: uv run taplo format
+        id: taplo
+        language: system
+        name: taplo format
+        types:
+          - toml
+      - entry: uv run python scripts/format_json.py
+        id: format-json
+        language: system
+        name: format json (sort keys + indent)
+        types:
+          - json
+      - entry: uv run python scripts/format_yaml.py
+        id: format-yaml
+        language: system
+        name: format yaml (sort keys + indent)
+        types:
+          - yaml
+    repo: local
