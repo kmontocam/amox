@@ -20,3 +20,15 @@ dev = [
   "taplo==0.9.3",
   "ty==0.0.38",
 ]
+
+[tool.ruff]
+line-length    = 88
+target-version = "py312"
+
+  [tool.ruff.lint]
+  ignore = ["COM812", "D203", "D212"]
+  select = ["ALL"]
+
+  [tool.ruff.format]
+  docstring-code-format = true
+  quote-style           = "double"
