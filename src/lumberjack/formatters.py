@@ -8,9 +8,9 @@ import re
 import typing as t
 import warnings
 
-from lumberjack import FormatterOptions
 from lumberjack.types_ import (
     FieldRemap,
+    FormatterOptions,
     IncludeFields,
     Json,
     Logfmt,

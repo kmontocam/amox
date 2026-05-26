@@ -9,10 +9,10 @@ import pathlib
 import types
 import typing as t
 
-from lumberjack import FormatterOptions, create_formatter
-from lumberjack.formatters import LumberjackFormatter
+from lumberjack.formatters import LumberjackFormatter, create_formatter
 from lumberjack.types_ import (
     DictConfig,
+    FormatterOptions,
     LogFormat,
     LoggerConfig,
     LogLevel,
