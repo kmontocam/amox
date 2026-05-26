@@ -64,7 +64,7 @@ def main() -> int:
     run(["uv", "lock"])
     run(["uv", "run", "taplo", "format", f"{PYPROJECT_FILE}"])
     run(["git", "add", f"{VERSION_FILE}", f"{PYPROJECT_FILE}", f"{LOCKFILE}"])
-    run(["git", "commit", "-m", f"Release {version}"])
+    run(["git", "commit", "-m", f"build: {version}"])
     run(["git", "tag", "-a", f"v{version}", "-m", f"Release {version}"])
 
     _ = sys.stdout.write(f"\ntagged v{version}\n")
