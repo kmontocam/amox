@@ -39,6 +39,7 @@ format: .uv
 	uv run ruff check --fix
 	uv run ruff format
 	uv run taplo format
+	uv run mbake format Makefile
 	uv run python scripts/format_json.py $$(find . -name '*.json' -not -path '*/.venv/*' -not -path '*/*_cache/*')
 	uv run python scripts/format_yaml.py $$(find . -name '*.yaml' -o -name '*.yml' | grep -v '.venv' | grep -v '_cache')
 
@@ -47,6 +48,11 @@ lint: .uv
 	uv run ruff check
 	uv run ruff format --check
 	uv run taplo format --check
+	uv run mbake format --check Makefile
+
+.PHONY: test  # Test suite (use ARGS="" to filter)
+test: .uv
+	uv run pytest $(ARGS)
 
 .PHONY: typecheck  # Type check source code
 typecheck: .uv

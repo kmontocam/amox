@@ -34,4 +34,9 @@ repos:
         name: format yaml (sort keys + indent)
         types:
           - yaml
+      - entry: uv run mbake format
+        files: (^|/)Makefile$|\.mk$
+        id: format-makefile
+        language: system
+        name: format makefile
     repo: local
