@@ -1,17 +1,15 @@
 [project]
-name = "lumberjack"
-version = "0.1.0"
-description = "Schema on read based logging"
-readme = "README.md"
-authors = [
-    { name = "Kevin Montoya", email = "me@kmontocam.com" }
-]
+authors         = [{ name = "Kevin Montoya", email = "me@kmontocam.com" }]
+dependencies    = []
+description     = "Schema on read based logging"
+name            = "lumberjack"
+readme          = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+version         = "0.1.0"
 
 [build-system]
-requires = ["uv_build>=0.11.14,<0.12.0"]
 build-backend = "uv_build"
+requires      = ["uv_build>=0.11.14,<0.12.0"]
 
 [dependency-groups]
 dev = [
