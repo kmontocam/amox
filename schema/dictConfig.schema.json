@@ -1,0 +1,1242 @@
+{
+  "$comment": "https://docs.python.org/3/library/logging.config.html#configuration-dictionary-schema",
+  "$id": "https://raw.githubusercontent.com/kmontocam/lumberjack/main/schema/dictConfig.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "definitions": {
+    "CustomHandlerConfig": {
+      "$comment": "https://docs.python.org/3/library/logging.config.html#user-defined-objects",
+      "additionalProperties": true,
+      "description": "Custom handler subclass specified by import path via `class` key.",
+      "properties": {
+        "class": {
+          "description": "Dotted import path to a handler class.",
+          "not": {
+            "enum": [
+              "logging.StreamHandler",
+              "logging.FileHandler",
+              "logging.handlers.RotatingFileHandler",
+              "logging.handlers.TimedRotatingFileHandler",
+              "logging.handlers.WatchedFileHandler",
+              "logging.handlers.SocketHandler",
+              "logging.handlers.DatagramHandler",
+              "logging.handlers.SysLogHandler",
+              "logging.handlers.NTEventLogHandler",
+              "logging.handlers.SMTPHandler",
+              "logging.handlers.MemoryHandler",
+              "logging.handlers.HTTPHandler",
+              "logging.handlers.QueueHandler",
+              "logging.NullHandler"
+            ]
+          },
+          "type": "string"
+        },
+        "filters": {
+          "description": "List of filter IDs to attach to this handler.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "formatter": {
+          "description": "Formatter ID to use for this handler.",
+          "type": "string"
+        },
+        "level": {
+          "$ref": "#/definitions/LogLevel",
+          "description": "Logging level for this handler."
+        }
+      },
+      "required": [
+        "class"
+      ],
+      "type": "object"
+    },
+    "DatagramHandlerConfig": {
+      "$comment": "https://docs.python.org/3/library/logging.handlers.html#logging.handlers.DatagramHandler",
+      "additionalProperties": false,
+      "description": "`logging.handlers.DatagramHandler` configuration. Sends pickled log records over UDP.",
+      "properties": {
+        "class": {
+          "const": "logging.handlers.DatagramHandler",
+          "description": "Handler class.",
+          "type": "string"
+        },
+        "filters": {
+          "description": "List of filter IDs to attach to this handler.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "formatter": {
+          "description": "Formatter ID to use for this handler.",
+          "type": "string"
+        },
+        "host": {
+          "description": "Hostname or IP address of the remote server.",
+          "type": "string"
+        },
+        "level": {
+          "$ref": "#/definitions/LogLevel",
+          "description": "Logging level for this handler."
+        },
+        "port": {
+          "description": "UDP port number on the remote server.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "class",
+        "host",
+        "port"
+      ],
+      "type": "object"
+    },
+    "FileHandlerConfig": {
+      "$comment": "https://docs.python.org/3/library/logging.handlers.html#logging.FileHandler",
+      "additionalProperties": false,
+      "description": "`logging.FileHandler` configuration.",
+      "properties": {
+        "class": {
+          "const": "logging.FileHandler",
+          "description": "Handler class.",
+          "type": "string"
+        },
+        "delay": {
+          "default": false,
+          "description": "Whether to delay opening the file until the first `emit()` call.",
+          "type": "boolean"
+        },
+        "encoding": {
+          "description": "Encoding used to open the file.",
+          "examples": [
+            "utf-8",
+            "ascii",
+            "latin-1"
+          ],
+          "type": "string"
+        },
+        "errors": {
+          "description": "Error handling mode for encoding errors. Passed to `open()`.",
+          "examples": [
+            "strict",
+            "ignore",
+            "replace",
+            "backslashreplace"
+          ],
+          "type": "string"
+        },
+        "filename": {
+          "description": "Path to the log file.",
+          "type": "string"
+        },
+        "filters": {
+          "description": "List of filter IDs to attach to this handler.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "formatter": {
+          "description": "Formatter ID to use for this handler.",
+          "type": "string"
+        },
+        "level": {
+          "$ref": "#/definitions/LogLevel",
+          "description": "Logging level for this handler."
+        },
+        "mode": {
+          "default": "a",
+          "description": "File open mode.",
+          "enum": [
+            "a",
+            "w",
+            "x"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "class",
+        "filename"
+      ],
+      "type": "object"
+    },
+    "FilterConfig": {
+      "anyOf": [
+        {
+          "$comment": "https://docs.python.org/3/library/logging.html#logging.Filter",
+          "additionalProperties": false,
+          "description": "Standard `logging.Filter` configuration.",
+          "properties": {
+            "name": {
+              "default": "",
+              "description": "Logger name prefix used to filter records. Only records from this logger or its children are allowed.",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        {
+          "$ref": "#/definitions/UserDefinedObject"
+        }
+      ]
+    },
+    "FormatterConfig": {
+      "anyOf": [
+        {
+          "$comment": "https://docs.python.org/3/library/logging.html#logging.Formatter",
+          "additionalProperties": false,
+          "description": "Standard `logging.Formatter` configuration.",
+          "properties": {
+            "class": {
+              "description": "Module absolute path to a `logging.Formatter` subclass, with constructor arguments fixed to `logging.Formatter.__init__`.",
+              "type": "string"
+            },
+            "datefmt": {
+              "description": "Format string for the date/time portion. Uses `time.strftime()` format codes.",
+              "type": "string"
+            },
+            "defaults": {
+              "description": "Default values for custom fields in the format string.",
+              "type": "object"
+            },
+            "format": {
+              "description": "Format string for the log message.",
+              "type": "string"
+            },
+            "style": {
+              "default": "%",
+              "description": "Style of the format string: '%' for %-formatting, '{' for `str.format()`, '$' for string.Template.",
+              "enum": [
+                "%",
+                "{",
+                "$"
+              ],
+              "type": "string"
+            },
+            "validate": {
+              "default": true,
+              "description": "Whether to validate the format string against the style.",
+              "type": "boolean"
+            }
+          },
+          "type": "object"
+        },
+        {
+          "$ref": "#/definitions/UserDefinedObject"
+        }
+      ]
+    },
+    "HTTPHandlerConfig": {
+      "$comment": "https://docs.python.org/3/library/logging.handlers.html#logging.handlers.HTTPHandler",
+      "additionalProperties": false,
+      "description": "`logging.handlers.HTTPHandler` configuration. Sends log records to a web server via HTTP.",
+      "properties": {
+        "class": {
+          "const": "logging.handlers.HTTPHandler",
+          "description": "Handler class.",
+          "type": "string"
+        },
+        "context": {
+          "description": "SSL context. Use `ext://` to reference an `ssl.SSLContext` object.",
+          "type": "string"
+        },
+        "credentials": {
+          "description": "`[username, password]` pair for HTTP Basic authentication.",
+          "items": [
+            {
+              "description": "Username.",
+              "type": "string"
+            },
+            {
+              "description": "Password.",
+              "type": "string"
+            }
+          ],
+          "maxItems": 2,
+          "minItems": 2,
+          "type": "array"
+        },
+        "filters": {
+          "description": "List of filter IDs to attach to this handler.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "formatter": {
+          "description": "Formatter ID to use for this handler.",
+          "type": "string"
+        },
+        "host": {
+          "description": "Web server host in the form `host:port`.",
+          "type": "string"
+        },
+        "level": {
+          "$ref": "#/definitions/LogLevel",
+          "description": "Logging level for this handler."
+        },
+        "method": {
+          "default": "GET",
+          "description": "HTTP method to use.",
+          "enum": [
+            "GET",
+            "POST"
+          ],
+          "type": "string"
+        },
+        "secure": {
+          "default": false,
+          "description": "Whether to use HTTPS.",
+          "type": "boolean"
+        },
+        "url": {
+          "description": "URL path on the server to send records to.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "class",
+        "host",
+        "url"
+      ],
+      "type": "object"
+    },
+    "HandlerConfig": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/StreamHandlerConfig"
+        },
+        {
+          "$ref": "#/definitions/FileHandlerConfig"
+        },
+        {
+          "$ref": "#/definitions/RotatingFileHandlerConfig"
+        },
+        {
+          "$ref": "#/definitions/TimedRotatingFileHandlerConfig"
+        },
+        {
+          "$ref": "#/definitions/WatchedFileHandlerConfig"
+        },
+        {
+          "$ref": "#/definitions/SocketHandlerConfig"
+        },
+        {
+          "$ref": "#/definitions/DatagramHandlerConfig"
+        },
+        {
+          "$ref": "#/definitions/SysLogHandlerConfig"
+        },
+        {
+          "$ref": "#/definitions/NTEventLogHandlerConfig"
+        },
+        {
+          "$ref": "#/definitions/SMTPHandlerConfig"
+        },
+        {
+          "$ref": "#/definitions/MemoryHandlerConfig"
+        },
+        {
+          "$ref": "#/definitions/HTTPHandlerConfig"
+        },
+        {
+          "$ref": "#/definitions/QueueHandlerConfig"
+        },
+        {
+          "$ref": "#/definitions/NullHandlerConfig"
+        },
+        {
+          "$ref": "#/definitions/CustomHandlerConfig"
+        },
+        {
+          "$ref": "#/definitions/UserDefinedObject"
+        }
+      ]
+    },
+    "LogLevel": {
+      "description": "Standard logging level names.",
+      "enum": [
+        "DEBUG",
+        "INFO",
+        "WARNING",
+        "ERROR",
+        "CRITICAL",
+        "NOTSET"
+      ],
+      "type": "string"
+    },
+    "LoggerConfig": {
+      "$comment": "https://docs.python.org/3/library/logging.config.html#dictionary-schema-details",
+      "additionalProperties": false,
+      "description": "Configuration for a named logger.",
+      "properties": {
+        "filters": {
+          "description": "List of filter IDs to attach to this logger.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "handlers": {
+          "description": "List of handler IDs to attach to this logger.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "level": {
+          "$ref": "#/definitions/LogLevel",
+          "description": "Logging level for this logger."
+        },
+        "propagate": {
+          "description": "Whether records are passed to parent logger handlers.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "MemoryHandlerConfig": {
+      "$comment": "https://docs.python.org/3/library/logging.handlers.html#logging.handlers.MemoryHandler",
+      "additionalProperties": false,
+      "description": "`logging.handlers.MemoryHandler` configuration. Buffers records in memory and flushes to a target handler.",
+      "properties": {
+        "capacity": {
+          "description": "Maximum number of records to buffer before flushing.",
+          "minimum": 1,
+          "type": "integer"
+        },
+        "class": {
+          "const": "logging.handlers.MemoryHandler",
+          "description": "Handler class.",
+          "type": "string"
+        },
+        "filters": {
+          "description": "List of filter IDs to attach to this handler.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "flushLevel": {
+          "default": 40,
+          "description": "Logging level that triggers an immediate flush. Default is `ERROR` (40).",
+          "type": "integer"
+        },
+        "flushOnClose": {
+          "default": true,
+          "description": "Whether to flush the buffer when the handler is closed.",
+          "type": "boolean"
+        },
+        "formatter": {
+          "description": "Formatter ID to use for this handler.",
+          "type": "string"
+        },
+        "level": {
+          "$ref": "#/definitions/LogLevel",
+          "description": "Logging level for this handler."
+        },
+        "target": {
+          "description": "Handler ID of the target handler to flush records to. Resolved by `dictConfig`.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "class",
+        "capacity"
+      ],
+      "type": "object"
+    },
+    "NTEventLogHandlerConfig": {
+      "$comment": "https://docs.python.org/3/library/logging.handlers.html#logging.handlers.NTEventLogHandler",
+      "additionalProperties": false,
+      "description": "`logging.handlers.NTEventLogHandler` configuration. Sends log records to the Windows NT Event Log. Windows only.",
+      "properties": {
+        "appname": {
+          "description": "Application name to use in the event log.",
+          "type": "string"
+        },
+        "class": {
+          "const": "logging.handlers.NTEventLogHandler",
+          "description": "Handler class.",
+          "type": "string"
+        },
+        "dllname": {
+          "description": "Path to a .dll or .exe file containing message definitions. Defaults to `win32service.pyd`.",
+          "type": "string"
+        },
+        "filters": {
+          "description": "List of filter IDs to attach to this handler.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "formatter": {
+          "description": "Formatter ID to use for this handler.",
+          "type": "string"
+        },
+        "level": {
+          "$ref": "#/definitions/LogLevel",
+          "description": "Logging level for this handler."
+        },
+        "logtype": {
+          "default": "Application",
+          "description": "Event log type to write to.",
+          "enum": [
+            "Application",
+            "System",
+            "Security"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "class",
+        "appname"
+      ],
+      "type": "object"
+    },
+    "NullHandlerConfig": {
+      "$comment": "https://docs.python.org/3/library/logging.handlers.html#logging.NullHandler",
+      "additionalProperties": false,
+      "description": "`logging.NullHandler` configuration. A no-op handler used to prevent 'No handler found' warnings.",
+      "properties": {
+        "class": {
+          "const": "logging.NullHandler",
+          "description": "Handler class.",
+          "type": "string"
+        },
+        "filters": {
+          "description": "List of filter IDs to attach to this handler.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "formatter": {
+          "description": "Formatter ID to use for this handler.",
+          "type": "string"
+        },
+        "level": {
+          "$ref": "#/definitions/LogLevel",
+          "description": "Logging level for this handler."
+        }
+      },
+      "required": [
+        "class"
+      ],
+      "type": "object"
+    },
+    "QueueHandlerConfig": {
+      "$comment": "https://docs.python.org/3/library/logging.handlers.html#logging.handlers.QueueHandler",
+      "additionalProperties": false,
+      "description": "`logging.handlers.QueueHandler` configuration. Sends log records to a queue, with an optional `QueueListener`.",
+      "properties": {
+        "class": {
+          "const": "logging.handlers.QueueHandler",
+          "description": "Handler class.",
+          "type": "string"
+        },
+        "filters": {
+          "description": "List of filter IDs to attach to this handler.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "formatter": {
+          "description": "Formatter ID to use for this handler.",
+          "type": "string"
+        },
+        "handlers": {
+          "description": "List of handler IDs for the `QueueListener` to dispatch records to.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "level": {
+          "$ref": "#/definitions/LogLevel",
+          "description": "Logging level for this handler."
+        },
+        "listener": {
+          "description": "Module path to a `QueueListener` subclass. Defaults to `logging.handlers.QueueListener`.",
+          "type": "string"
+        },
+        "queue": {
+          "description": "Queue instance or factory. Use a factory pattern object with `()` to create a queue, or `ext://` to reference an existing one. When omitted, an unbounded `queue.Queue()` is used.",
+          "oneOf": [
+            {
+              "$ref": "#/definitions/UserDefinedObject"
+            },
+            {
+              "description": "Reference to an existing queue via `ext://`.",
+              "type": "string"
+            }
+          ]
+        },
+        "respect_handler_level": {
+          "default": false,
+          "description": "Whether the `QueueListener` should respect each handler's level.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "class"
+      ],
+      "type": "object"
+    },
+    "RootLoggerConfig": {
+      "$comment": "https://docs.python.org/3/library/logging.config.html#dictionary-schema-details",
+      "additionalProperties": false,
+      "description": "Configuration for the root logger.",
+      "properties": {
+        "filters": {
+          "description": "List of filter IDs to attach to the root logger.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "handlers": {
+          "description": "List of handler IDs to attach to the root logger.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "level": {
+          "$ref": "#/definitions/LogLevel",
+          "description": "Logging level for the root logger."
+        }
+      },
+      "type": "object"
+    },
+    "RotatingFileHandlerConfig": {
+      "$comment": "https://docs.python.org/3/library/logging.handlers.html#logging.handlers.RotatingFileHandler",
+      "additionalProperties": false,
+      "description": "`logging.handlers.RotatingFileHandler` configuration. Rotates log files by size.",
+      "properties": {
+        "backupCount": {
+          "default": 0,
+          "description": "Number of rotated backup files to keep. Where 0 means no rotation.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "class": {
+          "const": "logging.handlers.RotatingFileHandler",
+          "description": "Handler class.",
+          "type": "string"
+        },
+        "delay": {
+          "default": false,
+          "description": "Whether to delay opening the file until the first `emit()` call.",
+          "type": "boolean"
+        },
+        "encoding": {
+          "description": "Encoding used to open the file.",
+          "examples": [
+            "utf-8",
+            "ascii",
+            "latin-1"
+          ],
+          "type": "string"
+        },
+        "errors": {
+          "description": "Error handling mode for encoding errors. Passed to `open()`.",
+          "examples": [
+            "strict",
+            "ignore",
+            "replace",
+            "backslashreplace"
+          ],
+          "type": "string"
+        },
+        "filename": {
+          "description": "Path to the log file.",
+          "type": "string"
+        },
+        "filters": {
+          "description": "List of filter IDs to attach to this handler.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "formatter": {
+          "description": "Formatter ID to use for this handler.",
+          "type": "string"
+        },
+        "level": {
+          "$ref": "#/definitions/LogLevel",
+          "description": "Logging level for this handler."
+        },
+        "maxBytes": {
+          "default": 0,
+          "description": "Maximum file size in bytes before rotation. 0 means no rotation.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "mode": {
+          "default": "a",
+          "description": "File open mode.",
+          "enum": [
+            "a",
+            "w",
+            "x"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "class",
+        "filename"
+      ],
+      "type": "object"
+    },
+    "SMTPHandlerConfig": {
+      "$comment": "https://docs.python.org/3/library/logging.handlers.html#logging.handlers.SMTPHandler",
+      "additionalProperties": false,
+      "description": "`logging.handlers.SMTPHandler` configuration. Sends log records via email using SMTP.",
+      "properties": {
+        "class": {
+          "const": "logging.handlers.SMTPHandler",
+          "description": "Handler class.",
+          "type": "string"
+        },
+        "credentials": {
+          "description": "`[username, password]` pair for SMTP authentication.",
+          "items": [
+            {
+              "description": "Username.",
+              "type": "string"
+            },
+            {
+              "description": "Password.",
+              "type": "string"
+            }
+          ],
+          "maxItems": 2,
+          "minItems": 2,
+          "type": "array"
+        },
+        "filters": {
+          "description": "List of filter IDs to attach to this handler.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "formatter": {
+          "description": "Formatter ID to use for this handler.",
+          "type": "string"
+        },
+        "fromaddr": {
+          "description": "Sender email address.",
+          "type": "string"
+        },
+        "level": {
+          "$ref": "#/definitions/LogLevel",
+          "description": "Logging level for this handler."
+        },
+        "mailhost": {
+          "description": "SMTP server address. A string for host only, or a `[host, port]` array.",
+          "oneOf": [
+            {
+              "description": "SMTP hostname.",
+              "type": "string"
+            },
+            {
+              "description": "Host and port pair.",
+              "items": [
+                {
+                  "description": "Hostname.",
+                  "type": "string"
+                },
+                {
+                  "description": "Port number.",
+                  "type": "integer"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            }
+          ]
+        },
+        "secure": {
+          "description": "TLS tuple for `starttls()`. Empty array `[]` for default TLS, or `[keyfile]`, or `[keyfile, certfile]`.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "subject": {
+          "description": "Email subject line.",
+          "type": "string"
+        },
+        "timeout": {
+          "default": 5.0,
+          "description": "Timeout in seconds for SMTP connection.",
+          "type": "number"
+        },
+        "toaddrs": {
+          "description": "Recipient email address(es).",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ]
+        }
+      },
+      "required": [
+        "class",
+        "mailhost",
+        "fromaddr",
+        "toaddrs",
+        "subject"
+      ],
+      "type": "object"
+    },
+    "SocketHandlerConfig": {
+      "$comment": "https://docs.python.org/3/library/logging.handlers.html#logging.handlers.SocketHandler",
+      "additionalProperties": false,
+      "description": "`logging.handlers.SocketHandler` configuration. Sends pickled log records over TCP.",
+      "properties": {
+        "class": {
+          "const": "logging.handlers.SocketHandler",
+          "description": "Handler class.",
+          "type": "string"
+        },
+        "filters": {
+          "description": "List of filter IDs to attach to this handler.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "formatter": {
+          "description": "Formatter ID to use for this handler.",
+          "type": "string"
+        },
+        "host": {
+          "description": "Hostname or IP address of the remote server.",
+          "type": "string"
+        },
+        "level": {
+          "$ref": "#/definitions/LogLevel",
+          "description": "Logging level for this handler."
+        },
+        "port": {
+          "description": "TCP port number on the remote server.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "class",
+        "host",
+        "port"
+      ],
+      "type": "object"
+    },
+    "StreamHandlerConfig": {
+      "$comment": "https://docs.python.org/3/library/logging.handlers.html#logging.StreamHandler",
+      "additionalProperties": false,
+      "description": "`logging.StreamHandler` configuration.",
+      "properties": {
+        "class": {
+          "const": "logging.StreamHandler",
+          "description": "Handler class.",
+          "type": "string"
+        },
+        "filters": {
+          "description": "List of filter IDs to attach to this handler.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "formatter": {
+          "description": "Formatter ID to use for this handler.",
+          "type": "string"
+        },
+        "level": {
+          "$ref": "#/definitions/LogLevel",
+          "description": "Logging level for this handler."
+        },
+        "stream": {
+          "description": "Output stream. Use `ext://` to reference a Python object.",
+          "examples": [
+            "ext://sys.stdout",
+            "ext://sys.stderr",
+            "ext://sys.__stdout__",
+            "ext://sys.__stderr__"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "class"
+      ],
+      "type": "object"
+    },
+    "SysLogHandlerConfig": {
+      "$comment": "https://docs.python.org/3/library/logging.handlers.html#logging.handlers.SysLogHandler",
+      "additionalProperties": false,
+      "description": "`logging.handlers.SysLogHandler` configuration. Sends log records to a Unix syslog or remote syslog daemon.",
+      "properties": {
+        "address": {
+          "description": "Syslog address. A string for Unix domain socket path, or a `[host, port]` array for UDP/TCP.",
+          "oneOf": [
+            {
+              "description": "Unix domain socket path.",
+              "examples": [
+                "/dev/log",
+                "/var/run/syslog"
+              ],
+              "type": "string"
+            },
+            {
+              "description": "Host and port pair.",
+              "items": [
+                {
+                  "description": "Hostname.",
+                  "type": "string"
+                },
+                {
+                  "description": "Port number.",
+                  "type": "integer"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            }
+          ]
+        },
+        "class": {
+          "const": "logging.handlers.SysLogHandler",
+          "description": "Handler class.",
+          "type": "string"
+        },
+        "facility": {
+          "default": 1,
+          "description": "Syslog facility code.",
+          "enum": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "type": "integer"
+        },
+        "filters": {
+          "description": "List of filter IDs to attach to this handler.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "formatter": {
+          "description": "Formatter ID to use for this handler.",
+          "type": "string"
+        },
+        "level": {
+          "$ref": "#/definitions/LogLevel",
+          "description": "Logging level for this handler."
+        },
+        "socktype": {
+          "description": "Socket type. Use `ext://socket.SOCK_DGRAM` for UDP or `ext://socket.SOCK_STREAM` for TCP. Omit to auto-detect.",
+          "examples": [
+            "ext://socket.SOCK_DGRAM",
+            "ext://socket.SOCK_STREAM"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "class"
+      ],
+      "type": "object"
+    },
+    "TimedRotatingFileHandlerConfig": {
+      "$comment": "https://docs.python.org/3/library/logging.handlers.html#logging.handlers.TimedRotatingFileHandler",
+      "additionalProperties": false,
+      "description": "`logging.handlers.TimedRotatingFileHandler` configuration. Rotates log files by time interval.",
+      "properties": {
+        "atTime": {
+          "description": "Time of day for rotation when `when` is `midnight` or `W0`-`W6`. Use `ext://` to reference a `datetime.time` object.",
+          "examples": [
+            "ext://datetime.time(0, 0)"
+          ],
+          "type": "string"
+        },
+        "backupCount": {
+          "default": 0,
+          "description": "Number of rotated backup files to keep. 0 means no deletion of old files.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "class": {
+          "const": "logging.handlers.TimedRotatingFileHandler",
+          "description": "Handler class.",
+          "type": "string"
+        },
+        "delay": {
+          "default": false,
+          "description": "Whether to delay opening the file until the first `emit()` call.",
+          "type": "boolean"
+        },
+        "encoding": {
+          "description": "Encoding used to open the file.",
+          "examples": [
+            "utf-8",
+            "ascii",
+            "latin-1"
+          ],
+          "type": "string"
+        },
+        "errors": {
+          "description": "Error handling mode for encoding errors. Passed to `open()`.",
+          "examples": [
+            "strict",
+            "ignore",
+            "replace",
+            "backslashreplace"
+          ],
+          "type": "string"
+        },
+        "filename": {
+          "description": "Path to the log file.",
+          "type": "string"
+        },
+        "filters": {
+          "description": "List of filter IDs to attach to this handler.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "formatter": {
+          "description": "Formatter ID to use for this handler.",
+          "type": "string"
+        },
+        "interval": {
+          "default": 1,
+          "description": "Number of time units between rotations.",
+          "minimum": 1,
+          "type": "integer"
+        },
+        "level": {
+          "$ref": "#/definitions/LogLevel",
+          "description": "Logging level for this handler."
+        },
+        "utc": {
+          "default": false,
+          "description": "Whether to use UTC time for rotation timing and file suffix.",
+          "type": "boolean"
+        },
+        "when": {
+          "default": "h",
+          "description": "Type of time interval for rotation.",
+          "enum": [
+            "S",
+            "M",
+            "H",
+            "D",
+            "W0",
+            "W1",
+            "W2",
+            "W3",
+            "W4",
+            "W5",
+            "W6",
+            "midnight"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "class",
+        "filename"
+      ],
+      "type": "object"
+    },
+    "UserDefinedObject": {
+      "$comment": "https://docs.python.org/3/library/logging.config.html#user-defined-objects",
+      "additionalProperties": true,
+      "description": "User-defined object instantiation via factory callable.",
+      "properties": {
+        "()": {
+          "description": "Absolute import path to a class or factory function that returns the configured object. The callable is invoked with additional keys as keyword arguments.",
+          "type": "string"
+        },
+        ".": {
+          "description": "Mapping of attribute names to values. Set on the object after instantiation.",
+          "type": "object"
+        }
+      },
+      "required": [
+        "()"
+      ],
+      "type": "object"
+    },
+    "WatchedFileHandlerConfig": {
+      "$comment": "https://docs.python.org/3/library/logging.handlers.html#logging.handlers.WatchedFileHandler",
+      "additionalProperties": false,
+      "description": "`logging.handlers.WatchedFileHandler` configuration. Watches the log file for external rotation (e.g. by `logrotate`). Unix only.",
+      "properties": {
+        "class": {
+          "const": "logging.handlers.WatchedFileHandler",
+          "description": "Handler class.",
+          "type": "string"
+        },
+        "delay": {
+          "default": false,
+          "description": "Whether to delay opening the file until the first `emit()` call.",
+          "type": "boolean"
+        },
+        "encoding": {
+          "description": "Encoding used to open the file.",
+          "examples": [
+            "utf-8",
+            "ascii",
+            "latin-1"
+          ],
+          "type": "string"
+        },
+        "errors": {
+          "description": "Error handling mode for encoding errors. Passed to `open()`.",
+          "examples": [
+            "strict",
+            "ignore",
+            "replace",
+            "backslashreplace"
+          ],
+          "type": "string"
+        },
+        "filename": {
+          "description": "Path to the log file.",
+          "type": "string"
+        },
+        "filters": {
+          "description": "List of filter IDs to attach to this handler.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "formatter": {
+          "description": "Formatter ID to use for this handler.",
+          "type": "string"
+        },
+        "level": {
+          "$ref": "#/definitions/LogLevel",
+          "description": "Logging level for this handler."
+        },
+        "mode": {
+          "default": "a",
+          "description": "File open mode.",
+          "enum": [
+            "a",
+            "w",
+            "x"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "class",
+        "filename"
+      ],
+      "type": "object"
+    }
+  },
+  "description": "JSON Schema for Python's `logging.config.dictConfig()` configuration dictionary",
+  "properties": {
+    "$schema": {
+      "description": "JSON Schema URI for editor validation.",
+      "type": "string"
+    },
+    "disable_existing_loggers": {
+      "default": true,
+      "description": "Whether any existing non-root loggers are to be disabled.",
+      "type": "boolean"
+    },
+    "filters": {
+      "additionalProperties": {
+        "$ref": "#/definitions/FilterConfig"
+      },
+      "description": "Map of filter id to filter configuration.",
+      "type": "object"
+    },
+    "formatters": {
+      "additionalProperties": {
+        "$ref": "#/definitions/FormatterConfig"
+      },
+      "description": "Map of formatter id to formatter configuration.",
+      "type": "object"
+    },
+    "handlers": {
+      "additionalProperties": {
+        "$ref": "#/definitions/HandlerConfig"
+      },
+      "description": "Map of handler id to handler configuration.",
+      "type": "object"
+    },
+    "incremental": {
+      "default": false,
+      "description": "Whether the configuration is to be interpreted as incremental to the existing configuration.",
+      "type": "boolean"
+    },
+    "loggers": {
+      "additionalProperties": {
+        "$ref": "#/definitions/LoggerConfig"
+      },
+      "description": "Map of logger name to logger configuration.",
+      "type": "object"
+    },
+    "root": {
+      "$ref": "#/definitions/RootLoggerConfig",
+      "description": "Configuration for the root logger."
+    },
+    "version": {
+      "const": 1,
+      "description": "Schema version."
+    }
+  },
+  "required": [
+    "version"
+  ],
+  "title": "Python logging.config.dictConfig schema",
+  "type": "object"
+}
