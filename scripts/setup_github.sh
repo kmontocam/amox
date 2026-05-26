@@ -55,3 +55,17 @@ existing_protection=$(gh api "repos/${REPO}/tags/protection" \
 if [ -z "${existing_protection}" ]; then
   gh api "repos/${REPO}/tags/protection" -X POST --silent -f pattern="${TAG_PATTERN}"
 fi
+
+# require PRs (no approval needed), block force pushes
+gh api "repos/${REPO}/branches/${BRANCH}/protection" -X PUT --silent --input - <<EOF
+{
+  "required_status_checks": null,
+  "enforce_admins": true,
+  "required_pull_request_reviews": {
+    "required_approving_review_count": 0
+  },
+  "restrictions": null,
+  "allow_force_pushes": false,
+  "block_creations": false
+}
+EOF
