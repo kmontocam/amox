@@ -13,6 +13,7 @@ VERSION_FILE = pathlib.Path(lumberjack.__file__)
 `__version__` found at library's root `__init__.py`.
 """
 PYPROJECT_FILE = pathlib.Path("pyproject.toml")
+LOCKFILE = pathlib.Path("uv.lock")
 DUNDER_VERSION_PATTERN = re.compile(r'__version__\s*=\s*"[^"]+"')
 """
 `__version__`
@@ -60,7 +61,9 @@ def main() -> int:
     update_file(VERSION_FILE, DUNDER_VERSION_PATTERN, f'__version__ = "{version}"')
     update_file(PYPROJECT_FILE, PYPROJECT_VERSION_PATTERN, f'version = "{version}"')
 
-    run(["git", "add", f"{VERSION_FILE}", f"{PYPROJECT_FILE}"])
+    run(["uv", "lock"])
+    run(["uv", "run", "taplo", "format", f"{PYPROJECT_FILE}"])
+    run(["git", "add", f"{VERSION_FILE}", f"{PYPROJECT_FILE}", f"{LOCKFILE}"])
     run(["git", "commit", "-m", f"Release {version}"])
     run(["git", "tag", "-a", f"v{version}", "-m", f"Release {version}"])
 
