@@ -21,13 +21,17 @@ dev = [
   "ruff==0.15.14",
   "taplo==0.9.3",
   "ty==0.0.38",
+  "uvicorn==0.47.0",
 ]
 
 [tool.pytest.ini_options]
-addopts    = ["-p", "no:logging"]
-markers    = ["functional: subprocess-based full API tests"]
+addopts = ["-p", "no:logging"]
+markers = [
+  "functional: subprocess-based full API tests",
+  "integration: tests with third-party dependencies",
+]
 pythonpath = ["."]
-testpaths  = ["tests"]
+testpaths = ["tests"]
 
 [tool.ruff]
 line-length    = 88
