@@ -9,9 +9,9 @@ import typing as t
 
 import pytest
 
-from lumberjack.formatters import LOG_FORMAT_ENV
-from lumberjack.parsers import JsonParser, LogfmtParser, LogLineParser
-from lumberjack.types_ import LogFormat
+from amox.formatters import LOG_FORMAT_ENV
+from amox.parsers import JsonParser, LogfmtParser, LogLineParser
+from amox.types_ import LogFormat
 
 SCRIPTS = pathlib.Path(__file__).parent / "scripts"
 

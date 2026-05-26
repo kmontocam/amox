@@ -1,4 +1,4 @@
-"""Unit tests for `src.lumberjack.handlers` module."""
+"""Unit tests for `src.amox.handlers` module."""
 
 import atexit
 import logging
@@ -7,8 +7,8 @@ from queue import SimpleQueue
 
 import pytest
 
-import lumberjack.handlers
-from lumberjack.handlers import LiveQueueHandler
+import amox.handlers
+from amox.handlers import LiveQueueHandler
 from tests.conftest import make_exc_info, make_record
 
 
@@ -53,7 +53,7 @@ class TestLiveQueueHandler:
         """An atexit callback is registered when a listener is assigned."""
         calls: list[object] = []
         monkeypatch.setattr(
-            lumberjack.handlers.atexit,  # pyright: ignore[reportPrivateLocalImportUsage]
+            amox.handlers.atexit,  # pyright: ignore[reportPrivateLocalImportUsage]
             atexit.register.__name__,
             calls.append,
         )

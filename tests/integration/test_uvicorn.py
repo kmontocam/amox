@@ -1,4 +1,4 @@
-"""Integration tests for uvicorn with lumberjack's logging configuration."""
+"""Integration tests for uvicorn with amox's logging configuration."""
 
 import os
 import subprocess
@@ -8,9 +8,9 @@ import urllib.request
 import pytest
 from uvicorn.config import LOGGING_CONFIG
 
-from lumberjack.formatters import LOG_FORMAT_ENV
-from lumberjack.parsers import JsonParser, LogfmtParser, LogLineParser
-from lumberjack.types_ import LogFormat
+from amox.formatters import LOG_FORMAT_ENV
+from amox.parsers import JsonParser, LogfmtParser, LogLineParser
+from amox.types_ import LogFormat
 from tests.integration.scripts import uvicorn_access, uvicorn_cli, uvicorn_log_config
 
 UVICORN_LOGGERS: dict[str, object] = LOGGING_CONFIG["loggers"]
@@ -167,7 +167,7 @@ class TestUvicorn:
             assert parsed["ts"] is not None
             assert parsed["level"] == "INFO"
             assert parsed["logger"] in UVICORN_LOGGERS
-            # uvicorn.access goes to stdout in default config, but lumberjack's
+            # uvicorn.access goes to stdout in default config, but amox's
             # config routes all loggers to stderr via root handler propagation.
             if parsed["logger"] == "uvicorn.access":
                 access_lines.append(parsed)

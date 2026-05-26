@@ -1,4 +1,4 @@
-"""Unit tests for `src.lumberjack.formatters` module."""
+"""Unit tests for `src.amox.formatters` module."""
 
 import datetime as dt
 import logging
@@ -7,19 +7,19 @@ import uuid
 
 import pytest
 
-from lumberjack import JsonFormatter, LogfmtFormatter, create_formatter
-from lumberjack.formatters import (
+from amox import JsonFormatter, LogfmtFormatter, create_formatter
+from amox.formatters import (
     ALL_EXCLUDE,
     DEFAULT_FIELD_REMAP,
     DEFAULT_INCLUDE,
     LOG_FORMAT_ENV,
     LOG_RECORD_BUILTIN_ATTRS,
     VERBOSE_INCLUDE,
-    LumberjackFormatter,
+    AmoxFormatter,
     resolve_format,
 )
-from lumberjack.parsers import JsonParser, LogfmtParser
-from lumberjack.types_ import (
+from amox.parsers import JsonParser, LogfmtParser
+from amox.types_ import (
     FormatterOptions,
     Json,
     Logfmt,
@@ -51,7 +51,7 @@ VERBOSE_KEYS: set[str] = {
 Verbose output keys without snake_case.
 """
 
-VERBOSE_KEYS_SNAKE: set[str] = {LumberjackFormatter.to_snake(k) for k in VERBOSE_KEYS}
+VERBOSE_KEYS_SNAKE: set[str] = {AmoxFormatter.to_snake(k) for k in VERBOSE_KEYS}
 """
 Verbose output keys with snake_case.
 """
@@ -64,9 +64,7 @@ ALL_INCLUDE_KEYS: set[str] = {
 All output keys.
 """
 
-ALL_INCLUDE_KEYS_SNAKE: set[str] = {
-    LumberjackFormatter.to_snake(k) for k in ALL_INCLUDE_KEYS
-}
+ALL_INCLUDE_KEYS_SNAKE: set[str] = {AmoxFormatter.to_snake(k) for k in ALL_INCLUDE_KEYS}
 """
 All output keys snake cased.
 """
@@ -101,7 +99,7 @@ class CreateFormatter(t.Protocol):
         ...
 
 
-class FormatterBuilder[T: LumberjackFormatter](t.Protocol):
+class FormatterBuilder[T: AmoxFormatter](t.Protocol):
     """
     Formatter builder fixture protocol.
 
@@ -120,13 +118,13 @@ class TestFormatTimestamp:
     """Tests for timestamp formatting with timezone handling."""
 
     @pytest.fixture
-    def formatter_builder(self) -> type[LumberjackFormatter]:
-        """`LumberjackFormatter` constructor."""
-        return LumberjackFormatter
+    def formatter_builder(self) -> type[AmoxFormatter]:
+        """`AmoxFormatter` constructor."""
+        return AmoxFormatter
 
     def test_utc_produces_z_suffix(
         self,
-        formatter_builder: type[LumberjackFormatter],
+        formatter_builder: type[AmoxFormatter],
     ) -> None:
         """UTC timezone produces ISO 8601 with Z suffix."""
         formatter = formatter_builder()
@@ -138,7 +136,7 @@ class TestFormatTimestamp:
 
     def test_offset_timezone(
         self,
-        formatter_builder: type[LumberjackFormatter],
+        formatter_builder: type[AmoxFormatter],
     ) -> None:
         """Non-UTC timezone produces offset suffix."""
         tz = dt.timezone(dt.timedelta(hours=5, minutes=30))
@@ -150,7 +148,7 @@ class TestFormatTimestamp:
 
     def test_custom_datefmt(
         self,
-        formatter_builder: type[LumberjackFormatter],
+        formatter_builder: type[AmoxFormatter],
     ) -> None:
         """Custom datefmt overrides ISO 8601 output."""
         formatter = formatter_builder(datefmt="%Y-%m-%d")
@@ -188,10 +186,10 @@ class TestToSnake:
     )
     def test_conversion(self, camel: str, expected: str) -> None:
         """Converts camelCase identifiers to snake_case."""
-        assert LumberjackFormatter.to_snake(camel) == expected
+        assert AmoxFormatter.to_snake(camel) == expected
 
 
-class TestCreateFormatter[T: LumberjackFormatter]:
+class TestCreateFormatter[T: AmoxFormatter]:
     """Tests for the `create_formatter` factory function."""
 
     @pytest.fixture
@@ -220,7 +218,7 @@ class TestCreateFormatter[T: LumberjackFormatter]:
     def test_format(
         self,
         log_format: LogFormat,
-        expected: type[LumberjackFormatter],
+        expected: type[AmoxFormatter],
         create_formatter: CreateFormatter,
     ) -> None:
         """Explicit format."""
@@ -229,7 +227,7 @@ class TestCreateFormatter[T: LumberjackFormatter]:
 
 
 class TestResolvefmt:
-    """Tests for `resolve_format`: reads `LUMBERJACK_LOG_FORMAT` env var."""
+    """Tests for `resolve_format`: reads `AMOX_LOG_FORMAT` env var."""
 
     @pytest.mark.parametrize(
         ("env_value", "expected", "warns"),
@@ -259,7 +257,7 @@ class TestResolvefmt:
         warns: bool,
     ) -> None:
         """
-        Resolves format from LUMBERJACK_LOG_FORMAT environment variable.
+        Resolves format from AMOX_LOG_FORMAT environment variable.
 
         Invalid values fall back to the default and emit a UserWarning.
         """
@@ -280,7 +278,7 @@ class TestResolvefmt:
             assert len(recwarn) == 0
 
 
-class LumberjackFormatterTests:
+class AmoxFormatterTests:
     """
     Shared formatter behavior tests.
 
@@ -289,7 +287,7 @@ class LumberjackFormatterTests:
     """
 
     @pytest.fixture
-    def builder(self) -> FormatterBuilder[LumberjackFormatter]:
+    def builder(self) -> FormatterBuilder[AmoxFormatter]:
         """Protocol to define a formatter builder."""
         raise NotImplementedError
 
@@ -300,7 +298,7 @@ class LumberjackFormatterTests:
 
     def test_default_options(
         self,
-        builder: FormatterBuilder[LumberjackFormatter],
+        builder: FormatterBuilder[AmoxFormatter],
         parser: LogfmtParser | JsonParser,
         record: logging.LogRecord,
     ) -> None:
@@ -354,7 +352,7 @@ class LumberjackFormatterTests:
         self,
         opts: FormatterOptions,
         expected: set[str],
-        builder: FormatterBuilder[LumberjackFormatter],
+        builder: FormatterBuilder[AmoxFormatter],
         parser: LogfmtParser | JsonParser,
         record: logging.LogRecord,
     ) -> None:
@@ -425,7 +423,7 @@ class LumberjackFormatterTests:
         self,
         opts: FormatterOptions,
         expected: list[str],
-        builder: FormatterBuilder[LumberjackFormatter],
+        builder: FormatterBuilder[AmoxFormatter],
         parser: LogfmtParser | JsonParser,
         record: logging.LogRecord,
     ) -> None:
@@ -437,7 +435,7 @@ class LumberjackFormatterTests:
 
     def test_extras_appear(
         self,
-        builder: FormatterBuilder[LumberjackFormatter],
+        builder: FormatterBuilder[AmoxFormatter],
         parser: LogfmtParser | JsonParser,
     ) -> None:
         """Extra attributes on the record appear as top-level keys."""
@@ -466,7 +464,7 @@ class LumberjackFormatterTests:
         msg: str,
         exc_info: bool,
         expected: str,
-        builder: FormatterBuilder[LumberjackFormatter],
+        builder: FormatterBuilder[AmoxFormatter],
         parser: LogfmtParser | JsonParser,
     ) -> None:
         """
@@ -496,7 +494,7 @@ class LumberjackFormatterTests:
         assert ("exception" in parsed) == exc_info
 
 
-class TestLogfmtFormatter(LumberjackFormatterTests):
+class TestLogfmtFormatter(AmoxFormatterTests):
     """Tests for `LogfmtFormatter` output and quoting behavior."""
 
     @t.override
@@ -641,7 +639,7 @@ class TestLogfmtFormatter(LumberjackFormatterTests):
         assert builder().encode_value(value) == expected
 
 
-class TestJsonFormatter(LumberjackFormatterTests):
+class TestJsonFormatter(AmoxFormatterTests):
     """Tests for `JsonFormatter` output."""
 
     @t.override

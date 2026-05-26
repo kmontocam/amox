@@ -535,7 +535,7 @@ class SetupOptions(FormatterOptions, total=False):
     format: LogFormat
     """
     Override the log format (`'logfmt'` or `'json'`). When omitted, reads from
-    `LUMBERJACK_LOG_FORMAT` env var, defaulting to `'logfmt'`.
+    `AMOX_LOG_FORMAT` env var, defaulting to `'logfmt'`.
     """
 
     loggers: list[types.ModuleType | str | LoggerLevelConfig]

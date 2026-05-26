@@ -9,8 +9,8 @@ import pathlib
 import types
 import typing as t
 
-from lumberjack.formatters import LumberjackFormatter, create_formatter
-from lumberjack.types_ import (
+from amox.formatters import AmoxFormatter, create_formatter
+from amox.types_ import (
     DictConfig,
     FormatterOptions,
     LogFormat,
@@ -32,7 +32,7 @@ Default log level on setup when viewing logs of third party packages.
 
 def setup(**opts: t.Unpack[SetupOptions]) -> None:
     """
-    Configure the root logger with lumberjack's structured formatters.
+    Configure the root logger with amox's structured formatters.
 
     Installs a `StreamHandler` (optionally wrapped in a `QueueHandler`) on the root
     logger. All loggers in the process inherit the handler and emit structured output.
@@ -48,7 +48,7 @@ def setup(**opts: t.Unpack[SetupOptions]) -> None:
 
     # forward formatter opts into the factory config
     formatter_cfg: dict[str, object] = cfg["formatters"][LIB]  # ty: ignore[invalid-assignment]  # pyright: ignore[reportAssignmentType, reportTypedDictNotRequiredAccess]
-    for key in set(opts) & LumberjackFormatter.configurable:
+    for key in set(opts) & AmoxFormatter.configurable:
         formatter_cfg[key] = opts[key]
 
     # override format if explicitly passed (bypass env/factory)
@@ -92,7 +92,7 @@ def setup(**opts: t.Unpack[SetupOptions]) -> None:
 
 
 def config() -> DictConfig:
-    """Return lumberjack's `dictConfig` mapping."""
+    """Return amox's `dictConfig` mapping."""
     return copy.deepcopy(read_config())
 
 
@@ -105,9 +105,9 @@ def get_logger(
     **opts: t.Unpack[FormatterOptions],
 ) -> logging.Logger:
     """
-    Return a logger with lumberjack's structured formatting attached.
+    Return a logger with amox's structured formatting attached.
 
-    Creates a `StreamHandler` with a lumberjack formatter on the named logger.
+    Creates a `StreamHandler` with a amox formatter on the named logger.
     """
     logger = logging.getLogger(name)
 

@@ -17,14 +17,14 @@ dependencies = []
 description = "Schema on read based logging"
 keywords = ["json", "logfmt", "logging", "structured-logging"]
 license = "MIT"
-name = "lumberjack"
+name = "amox"
 readme = "README.md"
 requires-python = ">=3.12"
 version = "0.0.1"
 
   [project.urls]
-  Issues     = "https://github.com/kmontocam/lumberjack/issues"
-  Repository = "https://github.com/kmontocam/lumberjack"
+  Issues     = "https://github.com/kmontocam/amox/issues"
+  Repository = "https://github.com/kmontocam/amox"
 
 [build-system]
 build-backend = "uv_build"

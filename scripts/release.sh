@@ -2,7 +2,7 @@
 # bump version, commit on a release branch. Optionally push and create PR.
 set -euo pipefail
 
-VERSION_FILE="src/lumberjack/__init__.py"
+VERSION_FILE="src/amox/__init__.py"
 PYPROJECT_FILE="pyproject.toml"
 LOCKFILE="uv.lock"
 SEMVER_RE='^[0-9]+\.[0-9]+\.[0-9]+$'

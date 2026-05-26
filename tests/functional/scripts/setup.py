@@ -6,7 +6,7 @@ Also emits a third-party DEBUG that is suppressed by root's INFO level.
 
 import logging
 
-from lumberjack import setup
+from amox import setup
 
 MSG: str = "started"
 NAME: str = "app.worker"

@@ -8,7 +8,7 @@ import re
 import typing as t
 import warnings
 
-from lumberjack.types_ import (
+from amox.types_ import (
     FieldRemap,
     FormatterOptions,
     IncludeFields,
@@ -18,7 +18,7 @@ from lumberjack.types_ import (
     LogRecordAttr,
 )
 
-LOG_FORMAT_ENV = "LUMBERJACK_LOG_FORMAT"
+LOG_FORMAT_ENV = "AMOX_LOG_FORMAT"
 """
 Convention environment variable name to configure log format.
 """
@@ -86,7 +86,7 @@ Always excluded attributes from log record.
 """
 
 
-class LumberjackFormatter(logging.Formatter):
+class AmoxFormatter(logging.Formatter):
     """Base formatter with shared field extraction logic."""
 
     configurable: frozenset[
@@ -255,7 +255,7 @@ class LumberjackFormatter(logging.Formatter):
         return snake.replace("-", "_").lower()
 
 
-class LogfmtFormatter(LumberjackFormatter):
+class LogfmtFormatter(AmoxFormatter):
     """
     Formats log records as logfmt key=value pairs.
 
@@ -310,7 +310,7 @@ class LogfmtFormatter(LumberjackFormatter):
         return any(c <= " " or c in {"=", '"', "\\"} or ord(c) == DEL_CHAR for c in s)
 
 
-class JsonFormatter(LumberjackFormatter):
+class JsonFormatter(AmoxFormatter):
     """Formats log records as JSON."""
 
     @t.override

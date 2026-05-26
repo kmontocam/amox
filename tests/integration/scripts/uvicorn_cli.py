@@ -1,8 +1,8 @@
 """
-uvicorn_cli: starts uvicorn via CLI with --log-config pointing to lumberjack's config.
+uvicorn_cli: starts uvicorn via CLI with --log-config pointing to amox's config.
 
 Proves that `uvicorn --log-config config.json` produces structured log output.
-The script points --log-config at lumberjack's shipped dictConfig.json, starts
+The script points --log-config at amox's shipped dictConfig.json, starts
 uvicorn as a subprocess, waits for it to accept connections, then terminates.
 """
 
@@ -15,7 +15,7 @@ import time
 
 import uvicorn
 
-import lumberjack
+import amox
 
 from . import uvicorn_log_config
 
@@ -24,9 +24,9 @@ PORT = 8000
 
 SCRIPTS_DIR = pathlib.Path(__file__).parent
 
-LOG_CONFIG = importlib.resources.files(lumberjack.__name__) / "dictConfig.json"
+LOG_CONFIG = importlib.resources.files(amox.__name__) / "dictConfig.json"
 """
-../../../src/lumberjack/dictConfig.json
+../../../src/amox/dictConfig.json
 """
 
 

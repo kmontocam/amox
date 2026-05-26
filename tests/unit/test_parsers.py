@@ -1,8 +1,8 @@
-"""Unit tests for `src.lumberjack.parsers` module."""
+"""Unit tests for `src.amox.parsers` module."""
 
 import pytest
 
-from lumberjack.parsers import JsonParser, LogfmtParser, ParseError
+from amox.parsers import JsonParser, LogfmtParser, ParseError
 
 
 class TestLogfmtParser:

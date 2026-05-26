@@ -2,7 +2,7 @@
 # github repository configuration
 set -euo pipefail
 
-REPO="kmontocam/lumberjack"
+REPO="kmontocam/amox"
 ENVIRONMENT="release"
 BRANCH="main"
 TAG_PATTERN="v*"

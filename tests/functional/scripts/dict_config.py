@@ -1,9 +1,9 @@
-"""dictConfig: configures logging via lumberjack's shipped config, produces output."""
+"""dictConfig: configures logging via amox's shipped config, produces output."""
 
 import logging
 import logging.config
 
-from lumberjack import config
+from amox import config
 
 MSG: str = "configured"
 NAME: str = "app.dictconfig"

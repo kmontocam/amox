@@ -2,27 +2,27 @@
   "$schema": "../../schema/dictConfig.schema.json",
   "disable_existing_loggers": false,
   "formatters": {
-    "lumberjack": {
-      "()": "lumberjack.create_formatter"
+    "amox": {
+      "()": "amox.create_formatter"
     }
   },
   "handlers": {
-    "lumberjack": {
+    "amox": {
       "class": "logging.StreamHandler",
-      "formatter": "lumberjack",
+      "formatter": "amox",
       "stream": "ext://sys.stderr"
     },
-    "lumberjack.queue_handler": {
-      "class": "lumberjack.handlers.LiveQueueHandler",
+    "amox.queue_handler": {
+      "class": "amox.handlers.LiveQueueHandler",
       "handlers": [
-        "lumberjack"
+        "amox"
       ],
       "respect_handler_level": true
     }
   },
   "root": {
     "handlers": [
-      "lumberjack.queue_handler"
+      "amox.queue_handler"
     ],
     "level": "INFO"
   },

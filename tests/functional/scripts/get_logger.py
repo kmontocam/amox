@@ -2,7 +2,7 @@
 
 import logging
 
-from lumberjack import get_logger
+from amox import get_logger
 
 MSG: str = "hello"
 NAME: str = "app.service"

@@ -5,7 +5,7 @@ import json
 import typing as t
 
 if t.TYPE_CHECKING:
-    from lumberjack.types_ import JsonValue
+    from amox.types_ import JsonValue
 
 
 class ParseError(ValueError):

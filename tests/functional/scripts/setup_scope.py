@@ -7,7 +7,7 @@ inherit root's INFO level.
 
 import logging
 
-from lumberjack import setup
+from amox import setup
 
 MSG = "app debug visible"
 NAME = "myapp.service"

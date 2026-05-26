@@ -1,4 +1,4 @@
-"""Unit tests for `src.lumberjack.logging_` module."""
+"""Unit tests for `src.amox.logging_` module."""
 
 import io
 import json
@@ -12,8 +12,8 @@ from logging.handlers import QueueHandler
 import jsonschema
 import pytest
 
-from lumberjack.formatters import LumberjackFormatter
-from lumberjack.logging_ import (
+from amox.formatters import AmoxFormatter
+from amox.logging_ import (
     DEFAULT_EXISTING_LOGGER_LEVEL,
     LIB,
     config,
@@ -22,8 +22,8 @@ from lumberjack.logging_ import (
     read_config,
     setup,
 )
-from lumberjack.parsers import JsonParser, LogfmtParser, LogLineParser
-from lumberjack.types_ import LogFormat, LogLevel
+from amox.parsers import JsonParser, LogfmtParser, LogLineParser
+from amox.types_ import LogFormat, LogLevel
 
 APP_LOGGER_PREFIX = "app"
 OTHER_LOGGER_PREFIX = "other"
@@ -75,13 +75,13 @@ class TestReadConfig:
 
 
 class TestHasHandler:
-    """Tests for `has_handler()`: lumberjack handler detection on root logger."""
+    """Tests for `has_handler()`: amox handler detection on root logger."""
 
     def test_no_handlers(self) -> None:
         """Returns False when root logger has no handlers."""
         assert has_handler() is False
 
-    def test_lumberjack_handler(self) -> None:
+    def test_amox_handler(self) -> None:
         """Returns True when root has a handler named after the library."""
         handler = logging.StreamHandler()
         handler.name = f"{LIB}.queue_handler"
@@ -125,12 +125,12 @@ class TestGetLogger:
         assert logger.level == logging.WARNING
 
     def test_default_handler(self) -> None:
-        """Attaches a `StreamHandler` with a LumberjackFormatter by default."""
+        """Attaches a `StreamHandler` with a AmoxFormatter by default."""
         logger = get_logger(f"{APP_LOGGER_PREFIX}.handler")
         assert len(logger.handlers) == 1
         (handler,) = logger.handlers
         assert isinstance(handler, logging.StreamHandler)
-        assert isinstance(handler.formatter, LumberjackFormatter)
+        assert isinstance(handler.formatter, AmoxFormatter)
 
     def test_mutate_root(self) -> None:
         """Does not add handlers to the root logger."""
@@ -147,7 +147,7 @@ class TestGetLogger:
         assert other.handlers == handlers
 
     def test_handlers_untouched(self) -> None:
-        """Additional handlers have no formatter attached by lumberjack."""
+        """Additional handlers have no formatter attached by amox."""
         handler = logging.StreamHandler(io.StringIO())
         logger = get_logger(f"{APP_LOGGER_PREFIX}.user", handlers=[handler])
 
@@ -166,7 +166,7 @@ class TestGetLogger:
         assert h2 in logger.handlers
 
         handler, *_ = logger.handlers
-        assert isinstance(handler.formatter, LumberjackFormatter)
+        assert isinstance(handler.formatter, AmoxFormatter)
 
     def test_idempotent(self) -> None:
         """Calling twice with the same name does not duplicate handlers."""
@@ -216,7 +216,7 @@ class TestGetLogger:
             ("foreign", True),
         ],
         ids=[
-            "lumberjack_handler",
+            "amox_handler",
             "foreign_handler",
         ],
     )

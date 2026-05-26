@@ -1,5 +1,5 @@
 """
-uvicorn_log_config: starts uvicorn with lumberjack's config, shuts down after startup.
+uvicorn_log_config: starts uvicorn with amox's config, shuts down after startup.
 
 Proves that `uvicorn.run(log_config=config())` produces structured log output
 from uvicorn's internal loggers.
@@ -11,7 +11,7 @@ import typing as t
 import uvicorn
 from uvicorn._types import ASGIReceiveCallable, ASGISendCallable, Scope
 
-from lumberjack import config
+from amox import config
 
 
 class AutoShutdownServer(uvicorn.Server):

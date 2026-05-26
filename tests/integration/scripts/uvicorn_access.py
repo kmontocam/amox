@@ -1,7 +1,7 @@
 """
 uvicorn_access: starts uvicorn, handles one HTTP request, shuts down.
 
-Proves that uvicorn's access logs are structured through lumberjack's formatter.
+Proves that uvicorn's access logs are structured through amox's formatter.
 """
 
 import socket
@@ -12,7 +12,7 @@ from http import HTTPStatus
 import uvicorn
 from uvicorn._types import ASGIReceiveCallable, ASGISendCallable, Scope
 
-from lumberjack import config
+from amox import config
 
 HOST = "127.0.0.1"
 PORT = 8000
