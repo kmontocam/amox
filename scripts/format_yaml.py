@@ -6,6 +6,10 @@ import sys
 
 import yaml
 
+# prevent YAML 1.1 bool resolution (on/off/yes/no: true/false).
+for ch in "oOyYnN":
+    del yaml.SafeLoader.yaml_implicit_resolvers[ch]
+
 
 def format_file(path: str) -> bool:
     """
