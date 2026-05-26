@@ -19,24 +19,24 @@ repos:
   - entry: uv run taplo format
     id: taplo
     language: system
-    name: taplo format
+    name: toml format
     types:
     - toml
   - entry: uv run python scripts/format_json.py
     id: format-json
     language: system
-    name: format json (sort keys + indent)
+    name: json format
     types:
     - json
   - entry: uv run python scripts/format_yaml.py
     id: format-yaml
     language: system
-    name: format yaml (sort keys + indent)
+    name: yaml format
     types:
     - yaml
   - entry: uv run mbake format
     files: (^|/)Makefile$|\.mk$
     id: format-makefile
     language: system
-    name: format makefile
+    name: makefile format
   repo: local
