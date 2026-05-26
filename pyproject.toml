@@ -13,13 +13,20 @@ requires      = ["uv_build>=0.11.14,<0.12.0"]
 
 [dependency-groups]
 dev = [
+  "jsonschema==4.26.0",
   "mbake==1.4.6",
   "pre-commit==4.6.0",
+  "pytest==9.0.3",
   "pyyaml==6.0.3",
   "ruff==0.15.14",
   "taplo==0.9.3",
   "ty==0.0.38",
 ]
+
+[tool.pytest.ini_options]
+addopts    = ["-p", "no:logging"]
+pythonpath = ["."]
+testpaths  = ["tests"]
 
 [tool.ruff]
 line-length    = 88
@@ -28,6 +35,9 @@ target-version = "py312"
   [tool.ruff.lint]
   ignore = ["COM812", "D203", "D212"]
   select = ["ALL"]
+
+    [tool.ruff.lint.per-file-ignores]
+    "tests/**/*.py" = ["FBT001", "S101"]
 
   [tool.ruff.format]
   docstring-code-format = true
