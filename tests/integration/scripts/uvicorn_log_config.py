@@ -29,7 +29,7 @@ async def app(
     receive: ASGIReceiveCallable,
     send: ASGISendCallable,
 ) -> None:
-    """AGI Application. Lifespan listener exlusive."""
+    """AGI Application. Lifespan listener exclusive."""
     if scope["type"] == "lifespan":
         message = await receive()
         if message["type"] == "lifespan.startup":

@@ -55,7 +55,7 @@ Configuration mode for formatters.
 - `'minimal'`: `[created, levelname, name, msg]`
 - `'verbose'`: `[created, levelname, name, msg, filename, lineno, funcName, threadName,
     processName]`
-- `'all'`: all atributes from `logging.LogRecord`
+- `'all'`: all attributes from `logging.LogRecord`
 
 All levels include `exc_info` if message object is an exception.
 """

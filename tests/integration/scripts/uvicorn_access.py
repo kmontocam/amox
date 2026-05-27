@@ -24,7 +24,7 @@ class StatefulServer(uvicorn.Server):
     """
     ASGI Server with a reference to itself on lifespan's state.
 
-    Additionally includes readiness proces singal to communicate server is ready to
+    Additionally includes readiness process signal to communicate server is ready to
     process requests.
     """
 

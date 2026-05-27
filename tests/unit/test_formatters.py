@@ -30,7 +30,7 @@ from tests.conftest import make_exc_info, make_record
 
 EXC_INFO: set[LogRecordAttr] = {"exc_info"}
 """
-Exclude, since it's appearence it is optional.
+Exclude, since it's appearance it is optional.
 """
 
 DEFAULT_KEYS: set[str] = {

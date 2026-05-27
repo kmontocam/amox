@@ -40,6 +40,7 @@ dev = [
   "ruff==0.15.14",
   "taplo==0.9.3",
   "ty==0.0.38",
+  "typos==1.46.3",
   "uvicorn==0.47.0",
 ]
 
@@ -69,3 +70,9 @@ target-version = "py312"
 
 [tool.pyright]
 reportAny = false
+
+[tool.typos.files]
+extend-exclude = ["uv.lock"]
+
+[tool.typos.default]
+locale = "en-us"
