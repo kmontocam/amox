@@ -148,10 +148,12 @@ class TestUvicorn:
             env=env,
         ) as proc:
             assert proc.stdout is not None
-            line = proc.stdout.readline()
-            assert line.strip() == uvicorn_access.READY_SIGNAL
+            ready_line = proc.stdout.readline().strip()
+            # convention emitting ready signal with port after gracefully starting
+            signal, port = ready_line.split()
+            assert signal == uvicorn_access.READY_SIGNAL
 
-            url = f"http://{uvicorn_access.HOST}:{uvicorn_access.PORT}/"
+            url = f"http://{uvicorn_access.HOST}:{port}/"
             urllib.request.urlopen(url, timeout=2)  # noqa: S310
 
             # server should self-terminate after serving one request

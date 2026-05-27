@@ -20,7 +20,15 @@ import amox
 from . import uvicorn_log_config
 
 HOST = "127.0.0.1"
-PORT = 8000
+
+
+def find_free_port() -> int:
+    """Bind to port 0 and return the OS-assigned free port."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind((HOST, 0))
+        (_, port) = sock.getsockname()
+        return port
+
 
 SCRIPTS_DIR = pathlib.Path(__file__).parent
 
@@ -45,6 +53,8 @@ def wait_for_server(host: str, port: int, timeout: float = 4.0) -> None:
 
 
 if __name__ == "__main__":
+    port = find_free_port()
+
     proc = subprocess.Popen(  # noqa: S603
         [
             sys.executable,
@@ -57,7 +67,7 @@ if __name__ == "__main__":
             "--host",
             HOST,
             "--port",
-            f"{PORT}",
+            f"{port}",
             "--lifespan",
             "off",
             f"{uvicorn_log_config.__name__}:{uvicorn_log_config.app.__name__}",
@@ -66,7 +76,7 @@ if __name__ == "__main__":
         stdout=subprocess.PIPE,
         text=True,
     )
-    wait_for_server(HOST, PORT)
+    wait_for_server(HOST, port)
     proc.terminate()
     _, stderr = proc.communicate(timeout=4)
     _ = sys.stderr.write(stderr)
