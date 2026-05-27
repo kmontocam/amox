@@ -226,7 +226,7 @@ class AmoxFormatter(logging.Formatter):
         Format a unix timestamp using `datefmt`.
 
         When `tz` is set, formats in that timezone. UTC gets a `Z` suffix.
-        Defaults to local time with ISO 8601 foramt.
+        Defaults to local time with ISO 8601 format.
         """
         timestamp = dt.datetime.fromtimestamp(created, tz=dt.UTC)
         if self.tz is not None:
