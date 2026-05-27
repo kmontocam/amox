@@ -1,0 +1,30 @@
+{
+  "$schema": "../../schema/dictConfig.schema.json",
+  "disable_existing_loggers": false,
+  "formatters": {
+    "amox": {
+      "()": "amox.create_formatter"
+    }
+  },
+  "handlers": {
+    "amox": {
+      "class": "logging.StreamHandler",
+      "formatter": "amox",
+      "stream": "ext://sys.stderr"
+    },
+    "amox.queue_handler": {
+      "class": "amox.handlers.LiveQueueHandler",
+      "handlers": [
+        "amox"
+      ],
+      "respect_handler_level": true
+    }
+  },
+  "root": {
+    "handlers": [
+      "amox.queue_handler"
+    ],
+    "level": "INFO"
+  },
+  "version": 1
+}

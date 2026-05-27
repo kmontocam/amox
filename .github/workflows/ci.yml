@@ -1,0 +1,67 @@
+jobs:
+  format:
+    name: Ruff format
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+    - name: Format
+      uses: astral-sh/ruff-action@v3
+      with:
+        args: format --check --diff
+  lint:
+    name: Ruff lint
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+    - name: Lint
+      uses: astral-sh/ruff-action@v3
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+    - name: Python setup
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Uv setup
+      uses: astral-sh/setup-uv@v7
+      with:
+        enable-cache: true
+    - name: Uv sync
+      run: uv sync
+    - name: Test
+      run: uv run pytest
+    strategy:
+      matrix:
+        python-version:
+        - '3.12'
+        - '3.13'
+        - '3.14'
+  typecheck:
+    name: Type check
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+    - name: Uv setup
+      uses: astral-sh/setup-uv@v7
+      with:
+        enable-cache: true
+    - name: Uv sync
+      run: uv sync
+    - name: Type check
+      run: uv run ty check
+name: CI
+on:
+  pull_request:
+    branches:
+    - main
+  push:
+    branches:
+    - main
+permissions:
+  contents: read

@@ -1,14 +1,71 @@
 [project]
-name = "lumberjack"
-version = "0.1.0"
-description = "Schema on read based logging"
-readme = "README.md"
-authors = [
-    { name = "Kevin Montoya", email = "me@kmontocam.com" }
+authors = [{ name = "Kevin Montoya", email = "me@kmontocam.com" }]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: System :: Logging",
+  "Typing :: Typed",
 ]
-requires-python = ">=3.12"
 dependencies = []
+description = "Schema on read based logging"
+keywords = ["json", "logfmt", "logging", "structured-logging"]
+license = "MIT"
+name = "amox"
+readme = "README.md"
+requires-python = ">=3.12"
+version = "0.0.1"
+
+  [project.urls]
+  Issues     = "https://github.com/kmontocam/amox/issues"
+  Repository = "https://github.com/kmontocam/amox"
 
 [build-system]
-requires = ["uv_build>=0.11.14,<0.12.0"]
 build-backend = "uv_build"
+requires      = ["uv_build>=0.11.14,<0.12.0"]
+
+[dependency-groups]
+dev = [
+  "jsonschema==4.26.0",
+  "mbake==1.4.6",
+  "pre-commit==4.6.0",
+  "pytest==9.0.3",
+  "pyyaml==6.0.3",
+  "ruff==0.15.14",
+  "taplo==0.9.3",
+  "ty==0.0.38",
+  "uvicorn==0.47.0",
+]
+
+[tool.pytest.ini_options]
+addopts = ["-p", "no:logging"]
+markers = [
+  "functional: subprocess-based full API tests",
+  "integration: tests with third-party dependencies",
+]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length    = 88
+target-version = "py312"
+
+  [tool.ruff.lint]
+  ignore = ["COM812", "D203", "D212"]
+  select = ["ALL"]
+
+    [tool.ruff.lint.per-file-ignores]
+    "tests/**/*.py" = ["FBT001", "S101"]
+
+  [tool.ruff.format]
+  docstring-code-format = true
+  quote-style           = "double"
+
+[tool.pyright]
+reportAny = false

@@ -1,0 +1,29 @@
+jobs:
+  publish:
+    environment: release
+    name: Publish to PyPI
+    permissions:
+      contents: write
+      id-token: write
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+      with:
+        persist-credentials: false
+    - name: Uv setup
+      uses: astral-sh/setup-uv@v7
+    - name: Build library
+      run: uv build
+    - name: Upload to PyPI
+      run: uv publish
+    - name: Create GitHub release
+      uses: softprops/action-gh-release@v3
+      with:
+        generate_release_notes: true
+name: Publish
+on:
+  push:
+    tags:
+    - v*
+permissions: {}
