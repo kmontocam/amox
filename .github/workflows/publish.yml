@@ -12,7 +12,7 @@ jobs:
       with:
         persist-credentials: false
     - name: Uv setup
-      uses: astral-sh/setup-uv@v8
+      uses: astral-sh/setup-uv@v7
     - name: Build library
       run: uv build
     - name: Upload to PyPI
