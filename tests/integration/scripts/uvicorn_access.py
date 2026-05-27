@@ -15,7 +15,6 @@ from uvicorn._types import ASGIReceiveCallable, ASGISendCallable, Scope
 from amox import config
 
 HOST = "127.0.0.1"
-PORT = 8000
 READY_SIGNAL = "READY"
 HTTP_STATUS_RESPONSE_CODE = HTTPStatus.NO_CONTENT
 
@@ -34,7 +33,10 @@ class StatefulServer(uvicorn.Server):
         await super().startup(sockets)
         state: dict[str, uvicorn.Server] = self.lifespan.state
         state["server"] = self
-        _ = sys.stdout.write(f"{READY_SIGNAL}\n")
+        (server,) = self.servers
+        (sock,) = server.sockets
+        (_, port) = sock.getsockname()
+        _ = sys.stdout.write(f"{READY_SIGNAL} {port}\n")
         _ = sys.stdout.flush()
 
 
@@ -67,6 +69,6 @@ async def app(
 
 
 if __name__ == "__main__":
-    cfg = uvicorn.Config(app, host=HOST, port=PORT, log_config=config(), lifespan="on")  # ty: ignore[invalid-argument-type]  # pyright: ignore[reportArgumentType]
+    cfg = uvicorn.Config(app, host=HOST, port=0, log_config=config(), lifespan="on")  # ty: ignore[invalid-argument-type]  # pyright: ignore[reportArgumentType]
     server = StatefulServer(cfg)
     server.run()
