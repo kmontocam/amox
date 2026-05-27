@@ -8,4 +8,11 @@
       "*.env.example": "allow",
     },
   },
+  "mcp": {
+    "gh-actions": {
+      "enabled": false,
+      "type": "remote",
+      "url": "https://api.githubcopilot.com/mcp/x/actions",
+    },
+  },
 }
