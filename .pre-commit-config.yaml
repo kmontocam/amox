@@ -39,4 +39,10 @@ repos:
     id: format-makefile
     language: system
     name: makefile format
+  - entry: uv run typos --force-exclude
+    id: typos
+    language: system
+    name: spell check
+    types:
+    - text
   repo: local

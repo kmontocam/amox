@@ -49,6 +49,7 @@ lint: .uv
 	uv run ruff format --check
 	uv run taplo format --check
 	uv run mbake format --check Makefile
+	uv run typos
 
 .PHONY: test  # Test suite (use ARGS="" to filter)
 test: .uv
