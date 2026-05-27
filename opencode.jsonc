@@ -13,6 +13,10 @@
       "enabled": false,
       "type": "remote",
       "url": "https://api.githubcopilot.com/mcp/x/actions",
+      "oauth": false,
+      "headers": {
+        "Authorization": "Bearer {env:GITHUB_TOKEN}",
+      },
     },
   },
 }
