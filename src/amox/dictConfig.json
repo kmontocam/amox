@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schema/dictConfig.json",
+  "$schema": "https://raw.githubusercontent.com/kmontocam/amox/main/schema/dictConfig.json",
   "disable_existing_loggers": false,
   "formatters": {
     "amox": {
