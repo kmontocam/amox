@@ -41,10 +41,8 @@ class TestConfig:
     def test_schema(self) -> None:
         """`dictConfig.json` conforms the managed JSON Schema for dictConfig."""
         schema_path = (
-            # ../../schema/dictConfig.schema.json
-            pathlib.Path(__file__).parent.parent.parent
-            / "schema"
-            / "dictConfig.schema.json"
+            # ../../schema/dictConfig.json
+            pathlib.Path(__file__).parent.parent.parent / "schema" / "dictConfig.json"
         )
         # jsonschema has no typed schema param; untyped dict is fine
         schema = json.loads(schema_path.read_text())
