@@ -33,8 +33,8 @@ Full cycle (lifespan=on, graceful shutdown):
     | shutdown | Finished server process [%d]     | server.py:100     |
 
 Reference:
-    `https://github.com/encode/uvicorn/blob/0.47.0/src/uvicorn/server.py`
-    `https://github.com/encode/uvicorn/blob/0.47.0/src/uvicorn/lifespan/on.py`
+    `https://github.com/kludex/uvicorn/blob/0.47.0/uvicorn/server.py`
+    `https://github.com/kludex/uvicorn/blob/0.47.0/uvicorn/lifespan/on.py`
 """
 
 CLI_STARTUP_LINES = 2
@@ -47,7 +47,7 @@ Minimum log lines before external termination (lifespan=off).
     | startup | Uvicorn running on {addr} (Press...) | server.py:222 |
 
 Reference:
-    `https://github.com/encode/uvicorn/blob/0.47.0/src/uvicorn/server.py`
+    `https://github.com/kludex/uvicorn/blob/0.47.0/uvicorn/server.py`
 """
 
 
