@@ -35,7 +35,7 @@ LOG_RECORD_BUILTIN_ATTRS: set[LogRecordAttr] = set(  # pyright: ignore[reportAss
 `logging.LogRecord` instance attributes to enrich logs.
 
 Note:
-    `message` and `asctime` are seeded, since `makeLogRecord` materializes theme during
+    `message` and `asctime` are seeded, since `makeLogRecord` materializes them during
     `Formatter.format()`.
 """
 
