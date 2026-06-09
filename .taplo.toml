@@ -9,5 +9,3 @@ indent_string         = "  "
 indent_tables         = true
 reorder_arrays        = true
 reorder_keys          = true
-
-exclude = ["**/*_cache/**", "**/.venv/**"]

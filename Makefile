@@ -38,7 +38,7 @@ install: .uv
 format: .uv
 	uv run ruff check --fix
 	uv run ruff format
-	uv run taplo format
+	uv run taplo format $$(find . -name '*.toml' -not -path '*/.venv/*' -not -path '*/*_cache/*')
 	uv run mbake format Makefile
 	uv run python scripts/format_json.py $$(find . -name '*.json' -not -path '*/.venv/*' -not -path '*/*_cache/*')
 	uv run python scripts/format_yaml.py $$(find . -name '*.yaml' -o -name '*.yml' | grep -v '.venv' | grep -v '_cache')
@@ -47,7 +47,7 @@ format: .uv
 lint: .uv
 	uv run ruff check
 	uv run ruff format --check
-	uv run taplo format --check
+	uv run taplo format --check $$(find . -name '*.toml' -not -path '*/.venv/*' -not -path '*/*_cache/*')
 	uv run mbake format --check Makefile
 	uv run typos
 
