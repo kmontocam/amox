@@ -528,14 +528,22 @@ class SetupOptions(FormatterOptions, total=False):
 
     name: str
     """
-    Application logger namespace. Sets this logger tree to `DEBUG` while root remains at
-    `INFO`, keeping third-party noise out of debug output.
+    System logger namespace. All loggers on the tree are promoted to
+    `DEBUG` while root and packages stay at the configured level.
+
+    Typically a top-level package name (e.g. `__name__`).
     """
 
     format: LogFormat
     """
     Override the log format (`'logfmt'` or `'json'`). When omitted, reads from
     `AMOX_LOG_FORMAT` env var, defaulting to `'logfmt'`.
+    """
+
+    level: LogLevel
+    """
+    Override the root logger level. When omitted, reads from `AMOX_LOG_LEVEL`
+    env var, defaulting to `'WARNING'`.
     """
 
     loggers: list[types.ModuleType | str | LoggerLevelConfig]

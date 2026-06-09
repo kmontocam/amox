@@ -1,8 +1,8 @@
 """
-setup_name: app namespace at DEBUG, third-party INFO visible, third-party DEBUG silent.
+setup_name_scope: tests that `setup(name=...)` promotes the app logger tree.
 
-Proves that `setup(name=...)` promotes the app logger to DEBUG while third-party loggers
-inherit root's INFO level.
+Emits an app DEBUG message (promoted by name scoping) and a third-party INFO
+message. Both are visible when the test runs with `AMOX_LOG_LEVEL=INFO`.
 """
 
 import logging

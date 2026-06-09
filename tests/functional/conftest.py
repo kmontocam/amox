@@ -9,7 +9,7 @@ import typing as t
 
 import pytest
 
-from amox.formatters import LOG_FORMAT_ENV
+from amox.env import LOG_FORMAT_ENV, LOG_LEVEL_ENV
 from amox.parsers import JsonParser, LogfmtParser, LogLineParser
 from amox.types_ import LogFormat
 
@@ -91,7 +91,7 @@ class ParsabilityTests:
     ) -> None:
         """Script produces a single parseable log line with expected fields."""
         filename = pathlib.Path(parsability_script.__file__).name
-        env = {**os.environ, LOG_FORMAT_ENV: log_format}
+        env = {**os.environ, LOG_FORMAT_ENV: log_format, LOG_LEVEL_ENV: "INFO"}
         result: ScriptResult = script_runner(filename, env=env)
 
         assert result.returncode == 0

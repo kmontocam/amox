@@ -1,7 +1,7 @@
 """
 setup: configures root logger, produces a single structured log line.
 
-Also emits a third-party DEBUG that is suppressed by root's INFO level.
+Also emits a third-party DEBUG that is suppressed by root's level.
 """
 
 import logging
@@ -16,5 +16,5 @@ if __name__ == "__main__":
     setup()
     logger = logging.getLogger(NAME)
     logger.log(LEVEL, MSG)
-    # third-party DEBUG, suppressed by root INFO
+    # third-party DEBUG, suppressed by root level
     logging.getLogger("urllib3.connectionpool").debug("does not appear")

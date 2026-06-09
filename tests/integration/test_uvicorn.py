@@ -8,7 +8,7 @@ import urllib.request
 import pytest
 from uvicorn.config import LOGGING_CONFIG
 
-from amox.formatters import LOG_FORMAT_ENV
+from amox.env import LOG_FORMAT_ENV, LOG_LEVEL_ENV
 from amox.parsers import JsonParser, LogfmtParser, LogLineParser
 from amox.types_ import LogFormat
 from tests.integration.scripts import uvicorn_access, uvicorn_cli, uvicorn_log_config
@@ -68,7 +68,7 @@ class TestUvicorn:
         parser: LogLineParser,
     ) -> None:
         """Uvicorn's lifecycle logs are parseable structured output."""
-        env = {**os.environ, LOG_FORMAT_ENV: log_format}
+        env = {**os.environ, LOG_FORMAT_ENV: log_format, LOG_LEVEL_ENV: "INFO"}
 
         result = subprocess.run(  # noqa: S603
             [sys.executable, "-m", uvicorn_log_config.__name__],
@@ -104,7 +104,7 @@ class TestUvicorn:
         parser: LogLineParser,
     ) -> None:
         """Uvicorn started via `--log-config` CLI flag produces structured output."""
-        env = {**os.environ, LOG_FORMAT_ENV: log_format}
+        env = {**os.environ, LOG_FORMAT_ENV: log_format, LOG_LEVEL_ENV: "INFO"}
 
         result = subprocess.run(  # noqa: S603
             [sys.executable, "-m", uvicorn_cli.__name__],
@@ -138,7 +138,7 @@ class TestUvicorn:
         parser: LogLineParser,
     ) -> None:
         """Uvicorn's access log for an HTTP request is parseable structured output."""
-        env = {**os.environ, LOG_FORMAT_ENV: log_format}
+        env = {**os.environ, LOG_FORMAT_ENV: log_format, LOG_LEVEL_ENV: "INFO"}
 
         with subprocess.Popen(  # noqa: S603
             [sys.executable, "-m", uvicorn_access.__name__],

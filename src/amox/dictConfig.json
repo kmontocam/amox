@@ -23,8 +23,7 @@
   "root": {
     "handlers": [
       "amox.LiveQueueHandler"
-    ],
-    "level": "INFO"
+    ]
   },
   "version": 1
 }

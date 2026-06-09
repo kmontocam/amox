@@ -8,15 +8,14 @@ import uuid
 import pytest
 
 from amox import JsonFormatter, LogfmtFormatter, create_formatter
+from amox.env import LOG_FORMAT_ENV, resolve_format
 from amox.formatters import (
     ALL_EXCLUDE,
     DEFAULT_FIELD_REMAP,
     DEFAULT_INCLUDE,
-    LOG_FORMAT_ENV,
     LOG_RECORD_BUILTIN_ATTRS,
     VERBOSE_INCLUDE,
     AmoxFormatter,
-    resolve_format,
 )
 from amox.parsers import JsonParser, LogfmtParser
 from amox.types_ import (
