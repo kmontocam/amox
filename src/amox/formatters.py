@@ -3,11 +3,10 @@
 import datetime as dt
 import json
 import logging
-import os
 import re
 import typing as t
-import warnings
 
+from amox.env import resolve_format, resolve_level
 from amox.types_ import (
     FieldRemap,
     FormatterOptions,
@@ -17,11 +16,6 @@ from amox.types_ import (
     LogFormat,
     LogRecordAttr,
 )
-
-LOG_FORMAT_ENV = "AMOX_LOG_FORMAT"
-"""
-Convention environment variable name to configure log format.
-"""
 
 DEL_CHAR = 0x7F
 """
@@ -39,13 +33,6 @@ Note:
     `Formatter.format()`.
 """
 
-
-LOG_FORMATS: set[LogFormat] = {
-    "json",
-    "logfmt",
-}
-
-DEFAULT_FORMAT: LogFormat = "logfmt"
 
 DEFAULT_FIELD_REMAP: FieldRemap = {
     "created": "ts",
@@ -345,7 +332,15 @@ def create_formatter(
 
     Resolve the log format and return the corresponding formatter instance.
     Used as the factory for `dictConfig`'s `()` protocol.
+
+    Note:
+        Calls `root.setLevel(resolve_level())` as a side-effect.  `dictConfig`
+        processes formatters before root and the bundled JSON omits the root
+        `level` key, so this value persists when the file is loaded directly.
+
     """
+    logging.getLogger().setLevel(resolve_level())
+
     log_format = log_format or resolve_format()
     tz = opts.get("tz")
     field_remap: FieldRemap = {
@@ -361,23 +356,3 @@ def create_formatter(
     )
     formatter.tz = tz
     return formatter
-
-
-def resolve_format() -> LogFormat:
-    """Resolve log format from  environment variable convention."""
-    env = os.environ.get(LOG_FORMAT_ENV)
-    if env is None:
-        return DEFAULT_FORMAT
-    if env in LOG_FORMATS:
-        return env  # ty: ignore[invalid-return-type]
-
-    warnings.warn(
-        (
-            f"{LOG_FORMAT_ENV}={env!r} is not valid."
-            f" Expected one of: {', '.join(sorted(LOG_FORMATS))}."
-            f" Falling back to {DEFAULT_FORMAT!r}."
-        ),
-        UserWarning,
-        stacklevel=2,
-    )
-    return DEFAULT_FORMAT

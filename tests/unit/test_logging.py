@@ -455,11 +455,11 @@ class TestSetup:
         assert logging.getLogger(name).level == logging.getLevelNamesMapping()[level]
 
     def test_name_scopes(self) -> None:
-        """`setup(name=...)` sets the named logger to DEBUG while root stays at INFO."""
+        """`setup(name=...)` sets named logger to DEBUG, root stays at WARNING."""
         setup(name=APP_LOGGER_PREFIX)
 
         assert logging.getLogger(APP_LOGGER_PREFIX).level == logging.DEBUG
-        assert logging.root.level == logging.INFO
+        assert logging.root.level == logging.WARNING
 
     def test_removes_get_logger_handlers(self) -> None:
         """`setup()` removes handlers from `get_logger`-configured loggers."""

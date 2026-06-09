@@ -10,6 +10,7 @@ import types
 import typing as t
 import warnings
 
+from amox.env import resolve_level
 from amox.formatters import AmoxFormatter, create_formatter
 from amox.handlers import LiveQueueHandler
 from amox.types_ import (
@@ -52,13 +53,8 @@ def setup(**opts: t.Unpack[SetupOptions]) -> None:
     """
     Configure root logger with schema based formatter.
 
-    Appends a `StreamHandler` (optionally wrapped in a `QueueHandler`) on the root
-    logger. All loggers in the process inherit the handler and emit semi-structured
-    output.
-
-    The root logger level defaults to `INFO`. When `name` is provided, the named
-    logger is set to `DEBUG`: giving full verbosity while third-party libraries stay at
-    `INFO`, overridable via `loggers`.
+    Appends a `StreamHandler` on the root logger. All loggers in the process inherit
+    the handler and emit semi-structured output.
     """
     # early exit if no modifications and root handler already modified
     if not opts and has_handler():
@@ -80,10 +76,14 @@ def setup(**opts: t.Unpack[SetupOptions]) -> None:
     use_queue = opts.get("queue", True)
     if not use_queue:
         _ = cfg["handlers"].pop(DEFAULT_QUEUE_HANDLER_NAME)  # type: ignore[misc]
-        cfg["root"] = {"handlers": [LIB], "level": "INFO"}
+        cfg["root"]["handlers"] = [LIB]  # pyright: ignore[reportTypedDictNotRequiredAccess]
+
+    # explicit level overrides env var / default
+    if level := opts.get("level"):
+        cfg["root"]["level"] = level  # pyright: ignore[reportTypedDictNotRequiredAccess]
 
     loggers: dict[str, LoggerConfig] = {}
-    # logger namespace (tree): promote to DEBUG while root stays at INFO.
+    # logger namespace (tree): promote to DEBUG.
     if name := opts.get("name"):
         loggers[name] = {"level": "DEBUG"}
 
@@ -120,8 +120,11 @@ def setup(**opts: t.Unpack[SetupOptions]) -> None:
 
 
 def config() -> DictConfig:
-    """Return amox's `dictConfig` mapping."""
-    return copy.deepcopy(read_config())
+    """Return amox's `dictConfig` mapping with resolved root level."""
+    cfg = copy.deepcopy(read_config())
+
+    cfg["root"]["level"] = resolve_level()  # pyright: ignore[reportTypedDictNotRequiredAccess]
+    return cfg
 
 
 def get_logger(
