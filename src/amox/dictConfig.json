@@ -12,7 +12,7 @@
       "formatter": "amox",
       "stream": "ext://sys.stderr"
     },
-    "amox.queue_handler": {
+    "amox.LiveQueueHandler": {
       "class": "amox.handlers.LiveQueueHandler",
       "handlers": [
         "amox"
@@ -22,7 +22,7 @@
   },
   "root": {
     "handlers": [
-      "amox.queue_handler"
+      "amox.LiveQueueHandler"
     ],
     "level": "INFO"
   },

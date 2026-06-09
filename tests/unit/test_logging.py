@@ -15,7 +15,8 @@ import pytest
 from amox.formatters import AmoxFormatter
 from amox.logging_ import (
     DEFAULT_EXISTING_LOGGER_LEVEL,
-    LIB,
+    DEFAULT_QUEUE_HANDLER_NAME,
+    DEFAULT_STREAM_HANDLER_NAME,
     config,
     get_logger,
     has_handler,
@@ -23,11 +24,19 @@ from amox.logging_ import (
     setup,
 )
 from amox.parsers import JsonParser, LogfmtParser, LogLineParser
-from amox.types_ import LogFormat, LogLevel
+from amox.types_ import FormatterOptions, LogFormat, LogLevel
 
 APP_LOGGER_PREFIX = "app"
 OTHER_LOGGER_PREFIX = "other"
 THIRD_PARTY_LOGGER = "thirdparty"
+
+
+class GetLoggerKwargs(FormatterOptions, total=False):
+    """Keyword arguments for `get_logger()` in parametrized tests."""
+
+    level: LogLevel | int
+    log_format: LogFormat | None
+    handlers: list[logging.Handler]
 
 
 class TestConfig:
@@ -73,44 +82,73 @@ class TestReadConfig:
 
 
 class TestHasHandler:
-    """Tests for `has_handler()`: amox handler detection on root logger."""
+    """Tests for `has_handler()`: amox handler detection on loggers."""
 
-    def test_no_handlers(self) -> None:
-        """Returns False when root logger has no handlers."""
-        assert has_handler() is False
-
-    def test_amox_handler(self) -> None:
-        """Returns True when root has a handler named after the library."""
+    @pytest.mark.parametrize(
+        ("handler_name", "expects"),
+        [
+            (DEFAULT_QUEUE_HANDLER_NAME, True),
+            (DEFAULT_STREAM_HANDLER_NAME, True),
+            ("foreign", False),
+            (None, False),
+        ],
+        ids=["queue_handler", "stream_handler", "foreign", "unnamed"],
+    )
+    def test_on_root(
+        self,
+        handler_name: str | None,
+        expects: bool,
+    ) -> None:
+        """Detects amox-named handlers on root logger."""
         handler = logging.StreamHandler()
-        handler.name = f"{LIB}.queue_handler"
+        handler.name = handler_name
         logging.root.addHandler(handler)
 
-        assert has_handler() is True
+        assert has_handler() is expects
 
-    def test_foreign_handler(self) -> None:
-        """Returns False when root only has foreign-named handlers."""
+    @pytest.mark.parametrize(
+        ("handler_name", "expects"),
+        [
+            (DEFAULT_STREAM_HANDLER_NAME, True),
+            ("foreign", False),
+            (None, False),
+        ],
+        ids=["stream_handler", "foreign", "unnamed"],
+    )
+    def test_on_named_logger(
+        self,
+        handler_name: str | None,
+        expects: bool,
+    ) -> None:
+        """Detects amox-named handlers on a named logger."""
+        logger = logging.getLogger(f"{APP_LOGGER_PREFIX}.has_handler")
         handler = logging.StreamHandler()
-        handler.name = "uvicorn"
-        logging.root.addHandler(handler)
+        handler.name = handler_name
+        logger.addHandler(handler)
 
-        assert has_handler() is False
+        assert has_handler(logger=logger) is expects
 
-    def test_unnamed_handler(self) -> None:
-        """Returns False when root has handlers with no name set."""
-        handler = logging.StreamHandler()
-        logging.root.addHandler(handler)
-
-        assert has_handler() is False
+    def teardown_method(self) -> None:
+        """Clean up named logger handlers from test_on_named_logger."""
+        logger = logging.getLogger(f"{APP_LOGGER_PREFIX}.has_handler")
+        logger.handlers.clear()
 
 
 class TestGetLogger:
     """Tests for `get_logger()`: named logger creation inline."""
 
-    def test_named_logger(self) -> None:
-        """Returns a logger with the given name."""
-        name = f"{APP_LOGGER_PREFIX}.named"
+    @pytest.mark.parametrize(
+        ("name", "expected"),
+        [
+            (f"{APP_LOGGER_PREFIX}.named", f"{APP_LOGGER_PREFIX}.named"),
+            (None, "root"),
+        ],
+        ids=["named", "root"],
+    )
+    def test_logger_name(self, name: str | None, expected: str) -> None:
+        """Returns a logger with the expected name."""
         logger = get_logger(name)
-        assert logger.name == name
+        assert logger.name == expected
 
     def test_default_level(self) -> None:
         """Default level is DEBUG so all messages pass through."""
@@ -122,16 +160,35 @@ class TestGetLogger:
         logger = get_logger(f"{APP_LOGGER_PREFIX}.custom", level="WARNING")
         assert logger.level == logging.WARNING
 
+    def test_handler_name(self) -> None:
+        """StreamHandler is named with the library prefix."""
+        logger = get_logger(f"{APP_LOGGER_PREFIX}.handler_name")
+        (handler,) = logger.handlers
+        assert handler.name == DEFAULT_STREAM_HANDLER_NAME
+
     def test_default_handler(self) -> None:
-        """Attaches a `StreamHandler` with a AmoxFormatter by default."""
+        """Attaches a StreamHandler with an AmoxFormatter by default."""
         logger = get_logger(f"{APP_LOGGER_PREFIX}.handler")
         assert len(logger.handlers) == 1
         (handler,) = logger.handlers
         assert isinstance(handler, logging.StreamHandler)
         assert isinstance(handler.formatter, AmoxFormatter)
 
+    @pytest.mark.parametrize(
+        ("name", "expected"),
+        [
+            (f"{APP_LOGGER_PREFIX}.propagate", False),
+            (None, True),
+        ],
+        ids=["named", "root"],
+    )
+    def test_propagate(self, name: str | None, expected: bool) -> None:
+        """Named loggers have propagation disabled; root stays enabled."""
+        logger = get_logger(name)
+        assert logger.propagate is expected
+
     def test_mutate_root(self) -> None:
-        """Does not add handlers to the root logger."""
+        """Does not add handlers to the root logger when given a name."""
         assert not logging.root.handlers
         _ = get_logger(f"{APP_LOGGER_PREFIX}.isolated")
         assert not logging.root.handlers
@@ -176,6 +233,61 @@ class TestGetLogger:
         assert len(cached_logger.handlers) == count
 
     @pytest.mark.parametrize(
+        ("kwargs", "expects_warning"),
+        [
+            ({"log_format": "json"}, True),
+            ({"snake_case": False}, True),
+            ({"level": "WARNING"}, True),
+            ({"handlers": []}, True),
+        ],
+        ids=["format", "opts", "level", "handlers"],
+    )
+    def test_configured_warning(
+        self,
+        kwargs: GetLoggerKwargs,
+        expects_warning: bool,
+        recwarn: pytest.WarningsRecorder,
+    ) -> None:
+        """
+        Repeat calls on a get_logger-configured logger warn on any keyword arguments.
+
+        Once `get_logger` owns a logger, all configuration is final.
+        """
+        name = f"{APP_LOGGER_PREFIX}.configured_warn"
+        _ = get_logger(name)
+        _ = get_logger(name, **kwargs)
+
+        if expects_warning:
+            (warn,) = recwarn
+            assert warn.category is UserWarning
+        else:
+            assert not recwarn.list
+
+    @pytest.mark.parametrize(
+        ("kwargs", "expects_warning"),
+        [
+            ({"log_format": "json"}, True),
+            ({"level": "WARNING"}, False),
+        ],
+        ids=["format", "level"],
+    )
+    def test_setup_active_warning(
+        self,
+        kwargs: GetLoggerKwargs,
+        expects_warning: bool,
+        recwarn: pytest.WarningsRecorder,
+    ) -> None:
+        """After `setup()`, calls warn only when formatting options are passed."""
+        setup()
+        _ = get_logger(f"{APP_LOGGER_PREFIX}.setup_warn", **kwargs)
+
+        if expects_warning:
+            (warn,) = recwarn
+            assert warn.category is UserWarning
+        else:
+            assert not recwarn.list
+
+    @pytest.mark.parametrize(
         ("log_format", "parser"),
         [
             ("logfmt", LogfmtParser()),
@@ -210,13 +322,11 @@ class TestGetLogger:
     @pytest.mark.parametrize(
         ("handler_name", "expects"),
         [
-            (f"{LIB}.queue_handler", False),
+            (DEFAULT_QUEUE_HANDLER_NAME, False),
+            (DEFAULT_STREAM_HANDLER_NAME, False),
             ("foreign", True),
         ],
-        ids=[
-            "amox_handler",
-            "foreign_handler",
-        ],
+        ids=["queue_handler", "stream_handler", "foreign_handler"],
     )
     def test_setup_early_exit(
         self,
@@ -235,6 +345,27 @@ class TestGetLogger:
 
         assert bool(logger.handlers) == expects
 
+    def test_setup_active_no_handler(self) -> None:
+        """After `setup()`, `get_logger()` adds no handler on the named logger."""
+        setup(name=f"{APP_LOGGER_PREFIX}.setup_active")
+        logger = get_logger(f"{APP_LOGGER_PREFIX}.setup_active.no_handler")
+        assert not logger.handlers
+
+    def test_setup_active_level(self) -> None:
+        """After `setup()`, `get_logger()` still sets the level."""
+        setup()
+        logger = get_logger(f"{APP_LOGGER_PREFIX}.setup_active.level", level="WARNING")
+        assert logger.level == logging.WARNING
+
+    def test_setup_active_handlers(self) -> None:
+        """After `setup()`, user-provided handlers are still added."""
+        setup()
+        handler = logging.StreamHandler(io.StringIO())
+        logger = get_logger(
+            f"{APP_LOGGER_PREFIX}.setup_active.handlers", handlers=[handler]
+        )
+        assert handler in logger.handlers
+
     def teardown_method(self) -> None:
         """Clean up any loggers we created."""
         manager = logging.Logger.manager
@@ -242,6 +373,8 @@ class TestGetLogger:
             if name.startswith((APP_LOGGER_PREFIX, OTHER_LOGGER_PREFIX)):
                 logger = logging.getLogger(name)
                 logger.handlers.clear()
+                logger.propagate = True
+                logger.setLevel(logging.NOTSET)
 
 
 class TestSetup:
@@ -327,6 +460,16 @@ class TestSetup:
 
         assert logging.getLogger(APP_LOGGER_PREFIX).level == logging.DEBUG
         assert logging.root.level == logging.INFO
+
+    def test_removes_get_logger_handlers(self) -> None:
+        """`setup()` removes handlers from `get_logger`-configured loggers."""
+        logger = get_logger(f"{APP_LOGGER_PREFIX}.removal")
+        assert has_handler(logger=logger)
+
+        setup()
+
+        assert not has_handler(logger=logger)
+        assert logger.propagate is True
 
     def teardown_method(self) -> None:
         """Clean up loggers created during tests."""

@@ -139,12 +139,13 @@ class TestFormatTimestamp:
         formatter_builder: type[AmoxFormatter],
     ) -> None:
         """Non-UTC timezone produces offset suffix."""
-        tz = dt.timezone(dt.timedelta(hours=5, minutes=30))
+        hours, minutes = 5, 30
+        tz = dt.timezone(dt.timedelta(hours=hours, minutes=minutes))
         formatter = formatter_builder()
         formatter.tz = tz
         ts = formatter.format_timestamp(0.0)
 
-        assert "+05:30" in ts
+        assert f"+0{hours}:{minutes}" in ts
 
     def test_custom_datefmt(
         self,
@@ -250,11 +251,11 @@ class TestResolvefmt:
     )
     def test_resolve_format(
         self,
-        monkeypatch: pytest.MonkeyPatch,
-        recwarn: pytest.WarningsRecorder,
         env_value: str | None,
         expected: str,
         warns: bool,
+        monkeypatch: pytest.MonkeyPatch,
+        recwarn: pytest.WarningsRecorder,
     ) -> None:
         """
         Resolves format from AMOX_LOG_FORMAT environment variable.

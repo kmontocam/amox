@@ -17,7 +17,7 @@ from tests.functional import (
     ScriptRunner,
 )
 from tests.functional.scripts import setup as parsability_script
-from tests.functional.scripts import setup_scope
+from tests.functional.scripts import setup_after_get_logger, setup_scope
 
 
 class TestSetup(ParsabilityTests):
@@ -70,3 +70,34 @@ class TestSetup(ParsabilityTests):
             assert parsed["msg"] == msg
             assert parsed["level"] == logging.getLevelName(level)
             assert parsed["logger"] == logger
+
+    @pytest.mark.functional
+    @pytest.mark.parametrize(
+        ("log_format", "parser"),
+        [
+            ("logfmt", LogfmtParser()),
+            ("json", JsonParser()),
+        ],
+        ids=["logfmt", "json"],
+    )
+    def test_removes_get_logger_handlers(
+        self,
+        log_format: LogFormat,
+        parser: LogLineParser,
+        script_runner: ScriptRunner,
+    ) -> None:
+        """`setup()` warns when removing `get_logger`-managed handlers."""
+        filename = pathlib.Path(setup_after_get_logger.__file__).name
+        env = {**os.environ, LOG_FORMAT_ENV: log_format}
+        result: ScriptResult = script_runner(filename, env=env)
+
+        assert result.returncode == 0
+
+        for line in result.lines:
+            parsed = parser.parse_line(line)
+            if parsed.get("logger") == "amox":
+                assert parsed["level"] == logging.getLevelName(logging.WARNING)
+                assert setup_after_get_logger.LOGGER in f"{parsed['msg']}"
+                break
+        else:
+            pytest.fail("no amox warning line found in output")
