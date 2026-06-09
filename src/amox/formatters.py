@@ -310,6 +310,8 @@ class JsonFormatter(AmoxFormatter):
 def create_formatter(
     log_format: Json,
     /,
+    *,
+    root: bool = False,
     **opts: t.Unpack[FormatterOptions],
 ) -> JsonFormatter: ...
 
@@ -318,6 +320,8 @@ def create_formatter(
 def create_formatter(
     log_format: Logfmt | None = None,
     /,
+    *,
+    root: bool = False,
     **opts: t.Unpack[FormatterOptions],
 ) -> LogfmtFormatter: ...
 
@@ -325,6 +329,8 @@ def create_formatter(
 def create_formatter(
     log_format: LogFormat | None = None,
     /,
+    *,
+    root: bool = False,
     **opts: t.Unpack[FormatterOptions],
 ) -> JsonFormatter | LogfmtFormatter:
     """
@@ -334,12 +340,12 @@ def create_formatter(
     Used as the factory for `dictConfig`'s `()` protocol.
 
     Note:
-        Calls `root.setLevel(resolve_level())` as a side-effect.  `dictConfig`
-        processes formatters before root and the bundled JSON omits the root
-        `level` key, so this value persists when the file is loaded directly.
+        When `root` is True, `setLevel()` is called on the root logger during
+        factory invocation. Although not a formatter concern, it is embedded to provide
+        a single resolution call for `dictConfig`'s dynamic configuration.
 
     """
-    logging.getLogger().setLevel(resolve_level())
+    logging.root.setLevel(resolve_level()) if root else None
 
     log_format = log_format or resolve_format()
     tz = opts.get("tz")

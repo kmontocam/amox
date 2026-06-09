@@ -3,7 +3,8 @@
   "disable_existing_loggers": false,
   "formatters": {
     "amox": {
-      "()": "amox.create_formatter"
+      "()": "amox.create_formatter",
+      "root": true
     }
   },
   "handlers": {
