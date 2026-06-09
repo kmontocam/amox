@@ -29,8 +29,8 @@ from amox import setup
 setup(__name__)
 ```
 
-No need to modify calls to `logging.getLogger`: only ensure that loggers share the
-`__name__`'s hierarchy.
+Standard `logging.getLogger()` works transparently: all records are emitted on the
+configured format.
 
 ```src/module/__init__.py
 import logging
