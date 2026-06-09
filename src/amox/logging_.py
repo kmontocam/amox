@@ -29,63 +29,65 @@ DEFAULT_EXISTING_LOGGER_LEVEL: LogLevel = "WARNING"
 Default log level on setup when viewing logs of third party packages.
 """
 
+QUEUE_HANDLER_NAME = f"{LIB}.queue_handler"
+"""
+Default handler (queue) name included on `dictConfig`.
+"""
+
 
 def setup(**opts: t.Unpack[SetupOptions]) -> None:
     """
-    Configure the root logger with amox's structured formatters.
+    Configure the root logger with schema based formatters.
 
-    Installs a `StreamHandler` (optionally wrapped in a `QueueHandler`) on the root
-    logger. All loggers in the process inherit the handler and emit structured output.
+    Appends a `StreamHandler` (optionally wrapped in a `QueueHandler`) on the root
+    logger. All loggers in the process inherit the handler and emit semi-structured
+    output.
 
     The root logger level defaults to `INFO`. When `name` is provided, the named
-    logger is set to `DEBUG`: giving clients full verbosity while third-party libraries
-    stay at `INFO`, overridable via `loggers`.
+    logger is set to `DEBUG`: giving full verbosity while third-party libraries stay at
+    `INFO`, overridable via `loggers`.
     """
     if has_handler():
         return
 
     cfg = config()
 
-    # forward formatter opts into the factory config
-    formatter_cfg: dict[str, object] = cfg["formatters"][LIB]  # ty: ignore[invalid-assignment]  # pyright: ignore[reportAssignmentType, reportTypedDictNotRequiredAccess]
+    # forward formatter opts into baked in formatter
+    formatter: dict[str, object] = cfg["formatters"][LIB]  # ty: ignore[invalid-assignment]  # pyright: ignore[reportAssignmentType, reportTypedDictNotRequiredAccess]
     for key in set(opts) & AmoxFormatter.configurable:
-        formatter_cfg[key] = opts[key]
+        formatter[key] = opts[key]
 
-    # override format if explicitly passed (bypass env/factory)
+    # override format if explicitly passed (bypass env/default)
     if fmt := opts.get("format"):
-        formatter_cfg["format"] = fmt
+        formatter["format"] = fmt
 
     # tz is non-serializable; use dictConfig's "." protocol for post-construction attr
     # setting
     if tz := opts.get("tz"):
-        formatter_cfg["."] = {"tz": tz}
+        formatter["."] = {"tz": tz}
 
     use_queue = opts.get("queue", True)
     if not use_queue:
-        _ = cfg["handlers"].pop(f"{LIB}.queue_handler")  # type: ignore[misc]
+        _ = cfg["handlers"].pop(QUEUE_HANDLER_NAME)  # type: ignore[misc]
         cfg["root"] = {"handlers": [LIB], "level": "INFO"}
 
-    # app namespace: promote to DEBUG while root stays at INFO
+    loggers: dict[str, LoggerConfig] = {}
+    # logger namespace (tree): promote to DEBUG while root stays at INFO.
     if name := opts.get("name"):
-        loggers_section: dict[str, LoggerConfig] = cfg.get("loggers", {})  # type: ignore[assignment]
-        loggers_section[name] = {"level": "DEBUG"}
-        cfg["loggers"] = loggers_section
-
-    # logger level overrides
-    loggers_section = cfg.get("loggers", {})  # type: ignore[assignment]
+        loggers[name] = {"level": "DEBUG"}
 
     for entry in opts.get("loggers", []):
         if isinstance(entry, (str, types.ModuleType)):
             entry_name = (
                 entry.__name__ if isinstance(entry, types.ModuleType) else entry
             )
-            loggers_section[entry_name] = {"level": DEFAULT_EXISTING_LOGGER_LEVEL}
+            loggers[entry_name] = {"level": DEFAULT_EXISTING_LOGGER_LEVEL}
         else:
             mod = entry["module"]
             entry_name = mod.__name__ if isinstance(mod, types.ModuleType) else mod
-            loggers_section[entry_name] = {"level": entry["level"]}
-    if loggers_section:
-        cfg["loggers"] = loggers_section
+            loggers[entry_name] = {"level": entry["level"]}
+
+    cfg["loggers"] = loggers
 
     logging.config.dictConfig(cfg)  # ty: ignore[invalid-argument-type]  # pyright: ignore[reportArgumentType]
     return
@@ -105,9 +107,9 @@ def get_logger(
     **opts: t.Unpack[FormatterOptions],
 ) -> logging.Logger:
     """
-    Return a logger with amox's structured formatting attached.
+    Return a logger with structured formatting attached.
 
-    Creates a `StreamHandler` with a amox formatter on the named logger.
+    Creates a `StreamHandler` with a formatter on the named logger.
     """
     logger = logging.getLogger(name)
 

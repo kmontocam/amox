@@ -15,7 +15,7 @@ import pytest
 from amox.formatters import AmoxFormatter
 from amox.logging_ import (
     DEFAULT_EXISTING_LOGGER_LEVEL,
-    LIB,
+    QUEUE_HANDLER_NAME,
     config,
     get_logger,
     has_handler,
@@ -82,7 +82,7 @@ class TestHasHandler:
     def test_amox_handler(self) -> None:
         """Returns True when root has a handler named after the library."""
         handler = logging.StreamHandler()
-        handler.name = f"{LIB}.queue_handler"
+        handler.name = QUEUE_HANDLER_NAME
         logging.root.addHandler(handler)
 
         assert has_handler() is True
@@ -210,7 +210,7 @@ class TestGetLogger:
     @pytest.mark.parametrize(
         ("handler_name", "expects"),
         [
-            (f"{LIB}.queue_handler", False),
+            (QUEUE_HANDLER_NAME, False),
             ("foreign", True),
         ],
         ids=[
