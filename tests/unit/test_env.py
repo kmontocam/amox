@@ -3,6 +3,7 @@
 import pytest
 
 from amox.env import LOG_LEVEL_ENV, resolve_level
+from amox.warnings_ import AmoxConfigWarning
 
 
 class TestResolveLevel:
@@ -46,7 +47,7 @@ class TestResolveLevel:
         """
         Resolves level from AMOX_LOG_LEVEL environment variable.
 
-        Invalid values fall back to the default and emit a UserWarning.
+        Invalid values fall back to the default and emit an `AmoxConfigWarning`.
         """
         if env is None:
             monkeypatch.delenv(LOG_LEVEL_ENV, raising=False)
@@ -60,6 +61,6 @@ class TestResolveLevel:
         if warns:
             assert len(recwarn) == 1
             (warn,) = recwarn
-            assert warn.category is UserWarning
+            assert warn.category is AmoxConfigWarning
         else:
             assert len(recwarn) == 0

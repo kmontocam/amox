@@ -21,6 +21,7 @@ from amox.types_ import (
     LogLevel,
     SetupOptions,
 )
+from amox.warnings_ import AmoxFormatWarning
 
 LIB = f"{__package__}"
 """
@@ -106,13 +107,11 @@ def setup(**opts: t.Unpack[SetupOptions]) -> None:
     # the logging tree.
     for logger_name in logging.Logger.manager.loggerDict:
         logger = logging.getLogger(logger_name)
-        amox_handlers = [
-            h for h in logger.handlers if h.name and h.name.startswith(LIB)
-        ]
-        if amox_handlers:
+        handlers = [h for h in logger.handlers if h.name and h.name.startswith(LIB)]
+        if handlers:
             msg = f"dropping {logger_name=} formatter: overwritten by root's config."
             log.warning(msg)
-            for h in amox_handlers:
+            for h in handlers:
                 logger.removeHandler(h)
             logger.propagate = True
 
@@ -122,7 +121,6 @@ def setup(**opts: t.Unpack[SetupOptions]) -> None:
 def config() -> DictConfig:
     """Return amox's `dictConfig` mapping with resolved root level."""
     cfg = copy.deepcopy(read_config())
-
     cfg["root"]["level"] = resolve_level()  # pyright: ignore[reportTypedDictNotRequiredAccess]
     return cfg
 
@@ -141,7 +139,7 @@ def get_logger(
     Note:
         Calls with the same name returns the existing logger without duplicating
         handlers. Formatting options on repeat calls or when `setup()` is active are
-        ignored with a warning.
+        ignored with an `AmoxFormatWarning`.
 
         When neither `setup()` nor a prior call configured the logger, a StreamHandler
         with an AmoxFormatter is attached and propagation is disabled to prevent double
@@ -162,7 +160,7 @@ def get_logger(
         ):
             warnings.warn(
                 f"options ignored on already configured logger {name!r}",
-                UserWarning,
+                AmoxFormatWarning,
                 stacklevel=2,
             )
         return logger
@@ -171,7 +169,7 @@ def get_logger(
     if configured_by_setup and has_formatting:
         warnings.warn(
             f"formatting options ignored on configured setup, logger {name!r}",
-            UserWarning,
+            AmoxFormatWarning,
             stacklevel=2,
         )
 
