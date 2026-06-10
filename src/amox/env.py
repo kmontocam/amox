@@ -4,6 +4,7 @@ import os
 import warnings
 
 from amox.types_ import LogFormat, LogLevel
+from amox.warnings_ import AmoxConfigWarning
 
 LOG_FORMAT_ENV = "AMOX_LOG_FORMAT"
 """
@@ -57,7 +58,7 @@ def resolve_format() -> LogFormat:
     Resolve log format from `AMOX_LOG_FORMAT`.
 
     When the environment variable is not set, falls back to `DEFAULT_FORMAT`.
-    Invalid values trigger a `UserWarning` and fall back to the default.
+    Invalid values trigger an `AmoxConfigWarning` and fall back to the default.
     """
     env = os.environ.get(LOG_FORMAT_ENV)
     if env is None:
@@ -71,7 +72,7 @@ def resolve_format() -> LogFormat:
             f" Expected one of: {', '.join(LOG_FORMATS)}."
             f" Falling back to {DEFAULT_FORMAT!r}."
         ),
-        UserWarning,
+        AmoxConfigWarning,
         stacklevel=2,
     )
     return DEFAULT_FORMAT
@@ -82,7 +83,7 @@ def resolve_level() -> LogLevel:
     Resolve root logger level from `AMOX_LOG_LEVEL`.
 
     When the environment variable is not set, falls back to `DEFAULT_ROOT_LEVEL`.
-    Invalid values trigger a `UserWarning` and fall back to the default.
+    Invalid values trigger an `AmoxConfigWarning` and fall back to the default.
     """
     env = os.environ.get(LOG_LEVEL_ENV)
     if env is None:
@@ -96,7 +97,7 @@ def resolve_level() -> LogLevel:
             f" Expected one of: {', '.join(LOG_LEVELS)}."
             f" Falling back to {DEFAULT_ROOT_LEVEL!r}."
         ),
-        UserWarning,
+        AmoxConfigWarning,
         stacklevel=2,
     )
     return DEFAULT_ROOT_LEVEL

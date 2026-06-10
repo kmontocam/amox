@@ -3,8 +3,11 @@
 from amox.formatters import JsonFormatter, LogfmtFormatter, create_formatter
 from amox.logging_ import config, get_logger, setup
 from amox.types_ import FormatterOptions
+from amox.warnings_ import AmoxConfigWarning, AmoxFormatWarning
 
 __all__ = [
+    "AmoxConfigWarning",
+    "AmoxFormatWarning",
     "FormatterOptions",
     "JsonFormatter",
     "LogfmtFormatter",

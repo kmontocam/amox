@@ -25,6 +25,7 @@ from amox.types_ import (
     LogFormat,
     LogRecordAttr,
 )
+from amox.warnings_ import AmoxConfigWarning
 from tests.conftest import make_exc_info, make_record
 
 EXC_INFO: set[LogRecordAttr] = {"exc_info"}
@@ -294,7 +295,7 @@ class TestResolvefmt:
         """
         Resolves format from AMOX_LOG_FORMAT environment variable.
 
-        Invalid values fall back to the default and emit a UserWarning.
+        Invalid values fall back to the default and emit an `AmoxConfigWarning`.
         """
         if env_value is None:
             monkeypatch.delenv(LOG_FORMAT_ENV, raising=False)
@@ -308,7 +309,7 @@ class TestResolvefmt:
         if warns:
             assert len(recwarn) == 1
             (warn,) = recwarn
-            assert warn.category is UserWarning
+            assert warn.category is AmoxConfigWarning
         else:
             assert len(recwarn) == 0
 

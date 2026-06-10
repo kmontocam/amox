@@ -25,6 +25,7 @@ from amox.logging_ import (
 )
 from amox.parsers import JsonParser, LogfmtParser, LogLineParser
 from amox.types_ import FormatterOptions, LogFormat, LogLevel
+from amox.warnings_ import AmoxFormatWarning
 
 APP_LOGGER_PREFIX = "app"
 OTHER_LOGGER_PREFIX = "other"
@@ -233,7 +234,7 @@ class TestGetLogger:
         assert len(cached_logger.handlers) == count
 
     @pytest.mark.parametrize(
-        ("kwargs", "expects_warning"),
+        ("kwargs", "expects"),
         [
             ({"log_format": "json"}, True),
             ({"snake_case": False}, True),
@@ -245,7 +246,7 @@ class TestGetLogger:
     def test_configured_warning(
         self,
         kwargs: GetLoggerKwargs,
-        expects_warning: bool,
+        expects: bool,
         recwarn: pytest.WarningsRecorder,
     ) -> None:
         """
@@ -257,14 +258,14 @@ class TestGetLogger:
         _ = get_logger(name)
         _ = get_logger(name, **kwargs)
 
-        if expects_warning:
+        if expects:
             (warn,) = recwarn
-            assert warn.category is UserWarning
+            assert warn.category is AmoxFormatWarning
         else:
             assert not recwarn.list
 
     @pytest.mark.parametrize(
-        ("kwargs", "expects_warning"),
+        ("kwargs", "expects"),
         [
             ({"log_format": "json"}, True),
             ({"level": "WARNING"}, False),
@@ -274,16 +275,16 @@ class TestGetLogger:
     def test_setup_active_warning(
         self,
         kwargs: GetLoggerKwargs,
-        expects_warning: bool,
+        expects: bool,
         recwarn: pytest.WarningsRecorder,
     ) -> None:
         """After `setup()`, calls warn only when formatting options are passed."""
         setup()
         _ = get_logger(f"{APP_LOGGER_PREFIX}.setup_warn", **kwargs)
 
-        if expects_warning:
+        if expects:
             (warn,) = recwarn
-            assert warn.category is UserWarning
+            assert warn.category is AmoxFormatWarning
         else:
             assert not recwarn.list
 
