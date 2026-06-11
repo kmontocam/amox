@@ -53,7 +53,7 @@ class TestLiveQueueHandler:
         """An atexit callback is registered when a listener is assigned."""
         calls: list[object] = []
         monkeypatch.setattr(
-            amox.handlers.atexit,  # pyright: ignore[reportPrivateLocalImportUsage]
+            amox.handlers.atexit,
             atexit.register.__name__,
             calls.append,
         )

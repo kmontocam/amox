@@ -68,9 +68,6 @@ target-version = "py312"
   docstring-code-format = true
   quote-style           = "double"
 
-[tool.pyright]
-reportAny = false
-
 [tool.typos.files]
 extend-exclude = ["uv.lock"]
 
