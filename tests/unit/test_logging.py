@@ -45,7 +45,7 @@ class TestConfig:
     def test_dictconfig(self) -> None:
         """Settled mapping is accepted by `logging.config.dictConfig`."""
         cfg = config()
-        logging.config.dictConfig(cfg)  # ty: ignore[invalid-argument-type]  # pyright: ignore[reportArgumentType]
+        logging.config.dictConfig(cfg)  # ty: ignore[invalid-argument-type]
 
     def test_schema(self) -> None:
         """Resolved configuration conforms the managed JSON Schema for `dictConfig`."""

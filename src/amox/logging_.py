@@ -63,7 +63,7 @@ def setup(**opts: t.Unpack[SetupOptions]) -> None:
 
     cfg = config(**opts)
 
-    logging.config.dictConfig(cfg)  # ty: ignore[invalid-argument-type]  # pyright: ignore[reportArgumentType]
+    logging.config.dictConfig(cfg)  # ty: ignore[invalid-argument-type]
 
     # remove any pre existing `get_logger`-managed stream handlers: let dictConfig rule
     # the logging tree.
@@ -90,7 +90,7 @@ def config(**opts: t.Unpack[ConfigOptions]) -> DictConfig:
     cfg = copy.deepcopy(dict_config())
 
     # forward formatter opts into baked-in formatter factory
-    formatter_cfg: dict[str, object] = cfg["formatters"][LIB]  # ty: ignore[invalid-assignment]  # pyright: ignore[reportAssignmentType, reportTypedDictNotRequiredAccess]
+    formatter_cfg: dict[str, object] = cfg["formatters"][LIB]  # ty: ignore[invalid-assignment]
 
     formatter_cfg.update(
         {key: opts.get(key) for key in set(opts) & AmoxFormatter.configurable},
@@ -103,11 +103,11 @@ def config(**opts: t.Unpack[ConfigOptions]) -> DictConfig:
     use_queue = opts.get("queue", True)
     if not use_queue:
         _ = cfg["handlers"].pop(DEFAULT_QUEUE_HANDLER_NAME)  # type: ignore[misc]
-        cfg["root"]["handlers"] = [LIB]  # pyright: ignore[reportTypedDictNotRequiredAccess]
+        cfg["root"]["handlers"] = [LIB]
 
     # explicit level overrides env var / default
     if level := opts.get("level"):
-        cfg["root"]["level"] = level  # pyright: ignore[reportTypedDictNotRequiredAccess]
+        cfg["root"]["level"] = level
 
     loggers: dict[str, LoggerConfig] = {}
     # logger namespace (tree): set to DEBUG.

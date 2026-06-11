@@ -10,6 +10,6 @@ NAME: str = "src.dictconfig"
 LEVEL: int = logging.INFO
 
 if __name__ == "__main__":
-    logging.config.dictConfig(config())  # ty: ignore[invalid-argument-type]  # pyright: ignore[reportArgumentType]
+    logging.config.dictConfig(config())  # ty: ignore[invalid-argument-type]
     logger = logging.getLogger(NAME)
     logger.log(LEVEL, MSG)

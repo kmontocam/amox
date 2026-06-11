@@ -489,14 +489,14 @@ class DictConfig(t.TypedDict, total=False):
 
 
 class LoggerLevelConfig(t.TypedDict, total=False):
-    """Per-logger level override for setup."""
+    """Per-logger level override ."""
 
     module: t.Required[types.ModuleType | str]
     level: t.Required[LogLevel | int]
 
 
 class FormatterOptions(t.TypedDict, total=False):
-    """Shared formatter options for `setup()` and `get_logger()`."""
+    """Shared formatter options."""
 
     datefmt: str | None
     """

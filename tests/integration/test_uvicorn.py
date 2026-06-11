@@ -23,14 +23,14 @@ Uvicorn lifecycle log lines emitted by `uvicorn.error` logger.
 
 Full cycle (lifespan=on, graceful shutdown):
 
-    | Phase    | Message                          | Source            |
-    | -------- | -------------------------------- | ----------------  |
-    | startup  | Started server process [%d]      | server.py:90      |
-    | startup  | Waiting for application startup. | lifespan/on.py:48 |
-    | startup  | Application startup complete.    | lifespan/on.py:62 |
-    | shutdown | Waiting for application shutdown.| lifespan/on.py:67 |
-    | shutdown | Application shutdown complete.   | lifespan/on.py:76 |
-    | shutdown | Finished server process [%d]     | server.py:100     |
+    | Phase    | Message                           | Source            |
+    | -------- | --------------------------------- | ----------------- |
+    | startup  | Started server process [%d]       | server.py:90      |
+    | startup  | Waiting for application startup.  | lifespan/on.py:48 |
+    | startup  | Application startup complete.     | lifespan/on.py:62 |
+    | shutdown | Waiting for application shutdown. | lifespan/on.py:67 |
+    | shutdown | Application shutdown complete.    | lifespan/on.py:76 |
+    | shutdown | Finished server process [%d]      | server.py:100     |
 
 Reference:
     `https://github.com/kludex/uvicorn/blob/0.47.0/uvicorn/server.py`

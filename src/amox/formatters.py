@@ -22,7 +22,7 @@ DEL_CHAR = 0x7F
 ASCII DEL character ordinal.
 """
 
-LOG_RECORD_BUILTIN_ATTRS: set[LogRecordAttr] = set(  # pyright: ignore[reportAssignmentType]
+LOG_RECORD_BUILTIN_ATTRS: set[LogRecordAttr] = set(
     logging.makeLogRecord({"message": "", "asctime": ""}).__dict__.keys(),
 )  # ty: ignore[invalid-assignment]
 """

@@ -21,6 +21,13 @@ from . import uvicorn_log_config
 
 HOST = "127.0.0.1"
 
+SCRIPTS_DIR = pathlib.Path(__file__).parent
+
+LOG_CONFIG = importlib.resources.files(amox.__name__) / "dictConfig.json"
+"""
+../../../src/amox/dictConfig.json
+"""
+
 
 def find_free_port() -> int:
     """Bind to port 0 and return the OS-assigned free port."""
@@ -28,14 +35,6 @@ def find_free_port() -> int:
         sock.bind((HOST, 0))
         (_, port) = sock.getsockname()
         return port
-
-
-SCRIPTS_DIR = pathlib.Path(__file__).parent
-
-LOG_CONFIG = importlib.resources.files(amox.__name__) / "dictConfig.json"
-"""
-../../../src/amox/dictConfig.json
-"""
 
 
 def wait_for_server(host: str, port: int, timeout: float = 4.0) -> None:

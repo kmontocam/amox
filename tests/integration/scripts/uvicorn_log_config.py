@@ -40,6 +40,6 @@ async def app(
 
 
 if __name__ == "__main__":
-    cfg = uvicorn.Config(app, log_config=config(), lifespan="on")  # ty: ignore[invalid-argument-type]  # pyright: ignore[reportArgumentType]
+    cfg = uvicorn.Config(app, log_config=config(), lifespan="on")  # ty: ignore[invalid-argument-type]
     server = AutoShutdownServer(cfg)
     server.run()
