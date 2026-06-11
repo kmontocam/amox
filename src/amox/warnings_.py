@@ -16,7 +16,7 @@ class AmoxConfigWarning(AmoxWarning):
 
 class AmoxFormatWarning(AmoxWarning):
     """
-    Conflicting formatting or setup options.
+    Conflicting formatting options.
 
     Emitted when formatting options are passed to a logger that is already
     configured.
