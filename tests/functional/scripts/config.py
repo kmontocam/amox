@@ -1,4 +1,4 @@
-"""dictConfig: configures logging via amox's shipped config, produces output."""
+"""Configures logging inline via resolved config, produces a single log line."""
 
 import logging
 import logging.config
@@ -6,7 +6,7 @@ import logging.config
 from amox import config
 
 MSG: str = "configured"
-NAME: str = "app.dictconfig"
+NAME: str = "src.dictconfig"
 LEVEL: int = logging.INFO
 
 if __name__ == "__main__":

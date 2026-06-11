@@ -1,4 +1,4 @@
-"""Functional tests."""
+"""Functional tests for high level APIs."""
 
 from tests.functional.conftest import (
     ParsabilityScript,

@@ -7,7 +7,6 @@ import uuid
 
 import pytest
 
-from amox import JsonFormatter, LogfmtFormatter, create_formatter
 from amox.env import LOG_FORMAT_ENV, LOG_LEVEL_ENV, resolve_format
 from amox.formatters import (
     ALL_EXCLUDE,
@@ -16,6 +15,9 @@ from amox.formatters import (
     LOG_RECORD_BUILTIN_ATTRS,
     VERBOSE_INCLUDE,
     AmoxFormatter,
+    JsonFormatter,
+    LogfmtFormatter,
+    create_formatter,
 )
 from amox.parsers import JsonParser, LogfmtParser
 from amox.types_ import (

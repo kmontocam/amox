@@ -82,6 +82,8 @@ type JsonValue = (
     list[JsonValue] | dict[str, JsonValue | object] | bool | int | float | None
 )
 
+type SetupOptions = ConfigOptions
+
 
 class FormatterConfig(t.TypedDict, total=False):
     """
@@ -523,12 +525,12 @@ class FormatterOptions(t.TypedDict, total=False):
     """
 
 
-class SetupOptions(FormatterOptions, total=False):
-    """Configuration for `setup()`."""
+class ConfigOptions(FormatterOptions, total=False):
+    """Logging configuration options."""
 
     name: str
     """
-    System logger namespace. All loggers on the tree are promoted to
+    System logger namespace. All loggers on the tree are set to
     `DEBUG` while root and packages stay at the configured level.
 
     Typically a top-level package name (e.g. `__name__`).

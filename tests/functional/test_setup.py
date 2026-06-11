@@ -8,6 +8,7 @@ import typing as t
 import pytest
 
 from amox.env import LOG_FORMAT_ENV, LOG_LEVEL_ENV
+from amox.logging_ import log
 from amox.parsers import JsonParser, LogfmtParser, LogLineParser
 from amox.types_ import LogFormat
 from tests.functional import (
@@ -17,11 +18,7 @@ from tests.functional import (
     ScriptRunner,
 )
 from tests.functional.scripts import setup as parsability_script
-from tests.functional.scripts import (
-    setup_after_get_logger,
-    setup_level_scope,
-    setup_name_scope,
-)
+from tests.functional.scripts import setup_deferred, setup_level_scope, setup_name_scope
 
 
 class TestSetup(ParsabilityTests):
@@ -41,15 +38,15 @@ class TestSetup(ParsabilityTests):
         ],
         ids=["logfmt", "json"],
     )
-    def test_name_scopes(
+    def test_name_scope(
         self,
         log_format: LogFormat,
         parser: LogLineParser,
         script_runner: ScriptRunner,
     ) -> None:
-        """`setup(name=...)` promotes app to DEBUG, third-party INFO visible."""
+        """`setup(name=...)` sets log level to DEBUG."""
         filename = pathlib.Path(setup_name_scope.__file__).name
-        env = {**os.environ, LOG_FORMAT_ENV: log_format, LOG_LEVEL_ENV: "INFO"}
+        env = {**os.environ, LOG_FORMAT_ENV: log_format}
         result: ScriptResult = script_runner(filename, env=env)
 
         assert result.returncode == 0
@@ -59,11 +56,6 @@ class TestSetup(ParsabilityTests):
                 setup_name_scope.MSG,
                 setup_name_scope.LEVEL,
                 setup_name_scope.NAME,
-            ),
-            (
-                setup_name_scope.THIRD_PARTY_MSG,
-                setup_name_scope.THIRD_PARTY_LEVEL,
-                setup_name_scope.THIRD_PARTY,
             ),
         ]
 
@@ -87,8 +79,8 @@ class TestSetup(ParsabilityTests):
     @pytest.mark.parametrize(
         ("level", "expected"),
         [
-            ("INFO", 2),
-            ("WARNING", 1),
+            ("INFO", 1),
+            ("WARNING", 0),
         ],
         ids=["info", "warning"],
     )
@@ -100,7 +92,12 @@ class TestSetup(ParsabilityTests):
         expected: int,
         script_runner: ScriptRunner,
     ) -> None:
-        """`LOG_LEVEL_ENV` with `setup()` controls third-party logs visibility."""
+        """
+        `LOG_LEVEL_ENV` with `setup()` controls third-party log visibility.
+
+        Equivalent to `setup(level=...)`, setting as part of environment to
+        parametrize at the test level.
+        """
         filename = pathlib.Path(setup_level_scope.__file__).name
         env = {
             **os.environ,
@@ -114,14 +111,8 @@ class TestSetup(ParsabilityTests):
 
         for line in result.lines:
             parsed = parser.parse_line(line)
-            assert parsed["msg"] in (
-                setup_level_scope.MSG,
-                setup_level_scope.THIRD_PARTY_MSG,
-            )
-            assert parsed["logger"] in (
-                setup_level_scope.NAME,
-                setup_level_scope.THIRD_PARTY,
-            )
+            assert parsed["msg"] == setup_level_scope.MSG
+            assert parsed["logger"] == setup_level_scope.NAME
             assert parsed["ts"] is not None
 
     @pytest.mark.functional
@@ -133,14 +124,43 @@ class TestSetup(ParsabilityTests):
         ],
         ids=["logfmt", "json"],
     )
-    def test_removes_get_logger_handlers(
+    def test_deferred_log_duplication(
         self,
         log_format: LogFormat,
         parser: LogLineParser,
         script_runner: ScriptRunner,
     ) -> None:
-        """`setup()` warns when removing `get_logger`-managed handlers."""
-        filename = pathlib.Path(setup_after_get_logger.__file__).name
+        """Call followed after existing managed loggers does not duplicate logs."""
+        filename = pathlib.Path(setup_deferred.__file__).name
+        env = {**os.environ, LOG_FORMAT_ENV: log_format}
+        result: ScriptResult = script_runner(filename, env=env)
+
+        assert result.returncode == 0
+
+        msg_lines = [
+            line
+            for line in result.lines
+            if parser.parse_line(line)["msg"] == setup_deferred.MSG
+        ]
+        assert len(msg_lines) == 1
+
+    @pytest.mark.functional
+    @pytest.mark.parametrize(
+        ("log_format", "parser"),
+        [
+            ("logfmt", LogfmtParser()),
+            ("json", JsonParser()),
+        ],
+        ids=["logfmt", "json"],
+    )
+    def test_deferred_logs_warning(
+        self,
+        log_format: LogFormat,
+        parser: LogLineParser,
+        script_runner: ScriptRunner,
+    ) -> None:
+        """Call followed after existing managed loggers produces a log warning."""
+        filename = pathlib.Path(setup_deferred.__file__).name
         env = {**os.environ, LOG_FORMAT_ENV: log_format}
         result: ScriptResult = script_runner(filename, env=env)
 
@@ -148,9 +168,8 @@ class TestSetup(ParsabilityTests):
 
         for line in result.lines:
             parsed = parser.parse_line(line)
-            if parsed.get("logger") == "amox":
+            if parsed["logger"] == log.name:
                 assert parsed["level"] == logging.getLevelName(logging.WARNING)
-                assert setup_after_get_logger.LOGGER in f"{parsed['msg']}"
                 break
         else:
-            pytest.fail("no amox warning line found in output")
+            pytest.fail("no warning line found in output")
