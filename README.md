@@ -26,7 +26,7 @@ On application's entrypoint:
 ```src/main.py
 from amox import setup
 
-setup(__name__)
+setup(name=__name__)
 ```
 
 Standard `logging.getLogger()` works transparently: all records are emitted on the
