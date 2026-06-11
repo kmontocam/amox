@@ -1,20 +1,19 @@
-"""
-setup: configures root logger, produces a single structured log line.
-
-Also emits a third-party DEBUG that is suppressed by root's level.
-"""
+"""Sets up logging, produces a single log line."""
 
 import logging
 
 from amox import setup
 
 MSG: str = "started"
-NAME: str = "app.worker"
+NAME: str = "src"
 LEVEL: int = logging.INFO
+
+THIRD_PARTY = "third.party"
+THIRD_PARTY_MSG = "information"
 
 if __name__ == "__main__":
     setup()
     logger = logging.getLogger(NAME)
     logger.log(LEVEL, MSG)
-    # third-party DEBUG, suppressed by root level
-    logging.getLogger("urllib3.connectionpool").debug("does not appear")
+    # third-party DEBUG: suppressed resolved config's root logging level
+    logging.getLogger(THIRD_PARTY).debug(THIRD_PARTY_MSG)

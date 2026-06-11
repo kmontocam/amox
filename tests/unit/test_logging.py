@@ -18,17 +18,16 @@ from amox.logging_ import (
     DEFAULT_QUEUE_HANDLER_NAME,
     DEFAULT_STREAM_HANDLER_NAME,
     config,
+    dict_config,
     get_logger,
     has_handler,
-    read_config,
     setup,
 )
 from amox.parsers import JsonParser, LogfmtParser, LogLineParser
 from amox.types_ import FormatterOptions, LogFormat, LogLevel
 from amox.warnings_ import AmoxFormatWarning
 
-APP_LOGGER_PREFIX = "app"
-OTHER_LOGGER_PREFIX = "other"
+SRC_LOGGER_PREFIX = "src"
 THIRD_PARTY_LOGGER = "thirdparty"
 
 
@@ -41,15 +40,15 @@ class GetLoggerKwargs(FormatterOptions, total=False):
 
 
 class TestConfig:
-    """Tests for `config()`: get library's `logger.config.dictConfig` dictionary."""
+    """Tests for `config()`: get library's mapping for `logger.config.dictConfig`."""
 
     def test_dictconfig(self) -> None:
-        """`dictConfig.json` is accepted by `logging.config.dictConfig`."""
+        """Settled mapping is accepted by `logging.config.dictConfig`."""
         cfg = config()
         logging.config.dictConfig(cfg)  # ty: ignore[invalid-argument-type]  # pyright: ignore[reportArgumentType]
 
     def test_schema(self) -> None:
-        """`dictConfig.json` conforms the managed JSON Schema for dictConfig."""
+        """Resolved configuration conforms the managed JSON Schema for `dictConfig`."""
         schema_path = (
             # ../../schema/dictConfig.json
             pathlib.Path(__file__).parent.parent.parent / "schema" / "dictConfig.json"
@@ -59,27 +58,14 @@ class TestConfig:
         cfg = config()
         jsonschema.validate(cfg, schema)
 
-    def test_deep_copy_isolation(self) -> None:
-        """Mutating the returned config does not affect subsequent calls."""
-        handler_name = "injected"
-        a = config()
-        a["handlers"][handler_name] = {"class": "logging.StreamHandler"}
-        b = config()
-        assert handler_name not in b["handlers"]
 
+class TestDictConfig:
+    """Tests for `dict_config()`: raw JSON loading."""
 
-class TestReadConfig:
-    """Tests for `read_config()`: raw JSON loading with caching."""
-
-    def test_cache(self) -> None:
-        """`read_config()` uses `functools.cache`. Same object on repeat calls."""
-        a = read_config()
-        b = read_config()
-        assert a is b
-
-    def teardown_method(self) -> None:
-        """Clear the read_config cache to avoid cross-test pollution."""
-        read_config.cache_clear()
+    def test_loads_config_file(self) -> None:
+        """`dict_config()` loads the bundled JSON file."""
+        cfg = dict_config()
+        assert isinstance(cfg, dict)
 
 
 class TestHasHandler:
@@ -122,7 +108,7 @@ class TestHasHandler:
         expects: bool,
     ) -> None:
         """Detects amox-named handlers on a named logger."""
-        logger = logging.getLogger(f"{APP_LOGGER_PREFIX}.has_handler")
+        logger = logging.getLogger(f"{SRC_LOGGER_PREFIX}.has_handler")
         handler = logging.StreamHandler()
         handler.name = handler_name
         logger.addHandler(handler)
@@ -131,7 +117,7 @@ class TestHasHandler:
 
     def teardown_method(self) -> None:
         """Clean up named logger handlers from test_on_named_logger."""
-        logger = logging.getLogger(f"{APP_LOGGER_PREFIX}.has_handler")
+        logger = logging.getLogger(f"{SRC_LOGGER_PREFIX}.has_handler")
         logger.handlers.clear()
 
 
@@ -141,7 +127,7 @@ class TestGetLogger:
     @pytest.mark.parametrize(
         ("name", "expected"),
         [
-            (f"{APP_LOGGER_PREFIX}.named", f"{APP_LOGGER_PREFIX}.named"),
+            (f"{SRC_LOGGER_PREFIX}.named", f"{SRC_LOGGER_PREFIX}.named"),
             (None, "root"),
         ],
         ids=["named", "root"],
@@ -153,23 +139,23 @@ class TestGetLogger:
 
     def test_default_level(self) -> None:
         """Default level is DEBUG so all messages pass through."""
-        logger = get_logger(f"{APP_LOGGER_PREFIX}.debug")
+        logger = get_logger(f"{SRC_LOGGER_PREFIX}.debug")
         assert logger.level == logging.DEBUG
 
     def test_custom_level(self) -> None:
         """Explicit level parameter sets the logger level."""
-        logger = get_logger(f"{APP_LOGGER_PREFIX}.custom", level="WARNING")
+        logger = get_logger(f"{SRC_LOGGER_PREFIX}.custom", level="WARNING")
         assert logger.level == logging.WARNING
 
     def test_handler_name(self) -> None:
         """StreamHandler is named with the library prefix."""
-        logger = get_logger(f"{APP_LOGGER_PREFIX}.handler_name")
+        logger = get_logger(f"{SRC_LOGGER_PREFIX}.handler_name")
         (handler,) = logger.handlers
         assert handler.name == DEFAULT_STREAM_HANDLER_NAME
 
     def test_default_handler(self) -> None:
         """Attaches a StreamHandler with an AmoxFormatter by default."""
-        logger = get_logger(f"{APP_LOGGER_PREFIX}.handler")
+        logger = get_logger(f"{SRC_LOGGER_PREFIX}.handler")
         assert len(logger.handlers) == 1
         (handler,) = logger.handlers
         assert isinstance(handler, logging.StreamHandler)
@@ -178,7 +164,7 @@ class TestGetLogger:
     @pytest.mark.parametrize(
         ("name", "expected"),
         [
-            (f"{APP_LOGGER_PREFIX}.propagate", False),
+            (f"{SRC_LOGGER_PREFIX}.propagate", False),
             (None, True),
         ],
         ids=["named", "root"],
@@ -191,21 +177,21 @@ class TestGetLogger:
     def test_mutate_root(self) -> None:
         """Does not add handlers to the root logger when given a name."""
         assert not logging.root.handlers
-        _ = get_logger(f"{APP_LOGGER_PREFIX}.isolated")
+        _ = get_logger(f"{SRC_LOGGER_PREFIX}.isolated")
         assert not logging.root.handlers
 
     def test_mutate_other_loggers(self) -> None:
         """Does not affect unrelated loggers."""
-        other = logging.getLogger(f"{OTHER_LOGGER_PREFIX}.lib")
+        other = logging.getLogger(f"{THIRD_PARTY_LOGGER}.lib")
         handlers = other.handlers
         assert not handlers
-        _ = get_logger(f"{APP_LOGGER_PREFIX}.only")
+        _ = get_logger(f"{SRC_LOGGER_PREFIX}.only")
         assert other.handlers == handlers
 
     def test_handlers_untouched(self) -> None:
         """Additional handlers have no formatter attached by amox."""
         handler = logging.StreamHandler(io.StringIO())
-        logger = get_logger(f"{APP_LOGGER_PREFIX}.user", handlers=[handler])
+        logger = get_logger(f"{SRC_LOGGER_PREFIX}.user", handlers=[handler])
 
         assert handler in logger.handlers
         assert handler.formatter is None
@@ -215,7 +201,7 @@ class TestGetLogger:
         h1 = logging.StreamHandler(io.StringIO())
         h2 = logging.StreamHandler(io.StringIO())
         handlers: list[logging.Handler] = [h1, h2]
-        logger = get_logger(f"{APP_LOGGER_PREFIX}.multi", handlers=handlers)
+        logger = get_logger(f"{SRC_LOGGER_PREFIX}.multi", handlers=handlers)
 
         assert len(logger.handlers) == len(handlers) + 1
         assert h1 in logger.handlers
@@ -226,7 +212,7 @@ class TestGetLogger:
 
     def test_idempotent(self) -> None:
         """Calling twice with the same name does not duplicate handlers."""
-        name = f"{APP_LOGGER_PREFIX}.idem"
+        name = f"{SRC_LOGGER_PREFIX}.idem"
         logger = get_logger(name)
         count = len(logger.handlers)
         cached_logger = get_logger(name)
@@ -254,7 +240,7 @@ class TestGetLogger:
 
         Once `get_logger` owns a logger, all configuration is final.
         """
-        name = f"{APP_LOGGER_PREFIX}.configured_warn"
+        name = f"{SRC_LOGGER_PREFIX}.configured_warn"
         _ = get_logger(name)
         _ = get_logger(name, **kwargs)
 
@@ -280,7 +266,7 @@ class TestGetLogger:
     ) -> None:
         """After `setup()`, calls warn only when formatting options are passed."""
         setup()
-        _ = get_logger(f"{APP_LOGGER_PREFIX}.setup_warn", **kwargs)
+        _ = get_logger(f"{SRC_LOGGER_PREFIX}.setup_warn", **kwargs)
 
         if expects:
             (warn,) = recwarn
@@ -303,7 +289,7 @@ class TestGetLogger:
     ) -> None:
         """The logger produces parseable structured output for each format."""
         logger = get_logger(
-            f"{APP_LOGGER_PREFIX}.output.{log_format}",
+            f"{SRC_LOGGER_PREFIX}.output.{log_format}",
             log_format=log_format,
         )
 
@@ -342,20 +328,20 @@ class TestGetLogger:
         handler = logging.StreamHandler()
         handler.name = handler_name
         logging.root.addHandler(handler)
-        logger = get_logger(f"{APP_LOGGER_PREFIX}.detect.{handler_name}")
+        logger = get_logger(f"{SRC_LOGGER_PREFIX}.detect.{handler_name}")
 
         assert bool(logger.handlers) == expects
 
     def test_setup_active_no_handler(self) -> None:
         """After `setup()`, `get_logger()` adds no handler on the named logger."""
-        setup(name=f"{APP_LOGGER_PREFIX}.setup_active")
-        logger = get_logger(f"{APP_LOGGER_PREFIX}.setup_active.no_handler")
+        setup(name=f"{SRC_LOGGER_PREFIX}.setup_active")
+        logger = get_logger(f"{SRC_LOGGER_PREFIX}.setup_active.no_handler")
         assert not logger.handlers
 
     def test_setup_active_level(self) -> None:
         """After `setup()`, `get_logger()` still sets the level."""
         setup()
-        logger = get_logger(f"{APP_LOGGER_PREFIX}.setup_active.level", level="WARNING")
+        logger = get_logger(f"{SRC_LOGGER_PREFIX}.setup_active.level", level="WARNING")
         assert logger.level == logging.WARNING
 
     def test_setup_active_handlers(self) -> None:
@@ -363,7 +349,7 @@ class TestGetLogger:
         setup()
         handler = logging.StreamHandler(io.StringIO())
         logger = get_logger(
-            f"{APP_LOGGER_PREFIX}.setup_active.handlers", handlers=[handler]
+            f"{SRC_LOGGER_PREFIX}.setup_active.handlers", handlers=[handler]
         )
         assert handler in logger.handlers
 
@@ -371,7 +357,7 @@ class TestGetLogger:
         """Clean up any loggers we created."""
         manager = logging.Logger.manager
         for name in list(manager.loggerDict.keys()):
-            if name.startswith((APP_LOGGER_PREFIX, OTHER_LOGGER_PREFIX)):
+            if name.startswith((SRC_LOGGER_PREFIX, THIRD_PARTY_LOGGER)):
                 logger = logging.getLogger(name)
                 logger.handlers.clear()
                 logger.propagate = True
@@ -457,14 +443,14 @@ class TestSetup:
 
     def test_name_scopes(self) -> None:
         """`setup(name=...)` sets named logger to DEBUG, root stays at WARNING."""
-        setup(name=APP_LOGGER_PREFIX)
+        setup(name=SRC_LOGGER_PREFIX)
 
-        assert logging.getLogger(APP_LOGGER_PREFIX).level == logging.DEBUG
+        assert logging.getLogger(SRC_LOGGER_PREFIX).level == logging.DEBUG
         assert logging.root.level == logging.WARNING
 
     def test_removes_get_logger_handlers(self) -> None:
         """`setup()` removes handlers from `get_logger`-configured loggers."""
-        logger = get_logger(f"{APP_LOGGER_PREFIX}.removal")
+        logger = get_logger(f"{SRC_LOGGER_PREFIX}.removal")
         assert has_handler(logger=logger)
 
         setup()

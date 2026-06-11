@@ -13,7 +13,7 @@ def isolate_root_logger() -> abc.Generator[None]:
 
     Prevents test pollution from `setup()` calls or leftover handlers.
     """
-    saved = logging.root.handlers[:]
+    saved = logging.root.handlers
     logging.root.handlers.clear()
     yield
-    logging.root.handlers[:] = saved
+    logging.root.handlers = saved

@@ -10,10 +10,10 @@ import types
 import typing as t
 import warnings
 
-from amox.env import resolve_level
 from amox.formatters import AmoxFormatter, create_formatter
 from amox.handlers import LiveQueueHandler
 from amox.types_ import (
+    ConfigOptions,
     DictConfig,
     FormatterOptions,
     LogFormat,
@@ -61,7 +61,33 @@ def setup(**opts: t.Unpack[SetupOptions]) -> None:
     if not opts and has_handler():
         return
 
-    cfg = config()
+    cfg = config(**opts)
+
+    logging.config.dictConfig(cfg)  # ty: ignore[invalid-argument-type]  # pyright: ignore[reportArgumentType]
+
+    # remove any pre existing `get_logger`-managed stream handlers: let dictConfig rule
+    # the logging tree.
+    for logger_name in logging.Logger.manager.loggerDict:
+        logger = logging.getLogger(logger_name)
+        handlers = [h for h in logger.handlers if h.name and h.name.startswith(LIB)]
+        if handlers:
+            msg = f"dropping {logger_name=} formatter: overwritten by root's config."
+            log.warning(msg)
+            for h in handlers:
+                logger.removeHandler(h)
+            logger.propagate = True
+
+    return
+
+
+def config(**opts: t.Unpack[ConfigOptions]) -> DictConfig:
+    """
+    Resolve `dictConfig`'s configuration.
+
+    Apply options and environment conventions to produce a compliant mapping
+    for `logging.config.dictConfig`.
+    """
+    cfg = copy.deepcopy(dict_config())
 
     # forward formatter opts into baked-in formatter factory
     formatter_cfg: dict[str, object] = cfg["formatters"][LIB]  # ty: ignore[invalid-assignment]  # pyright: ignore[reportAssignmentType, reportTypedDictNotRequiredAccess]
@@ -84,7 +110,7 @@ def setup(**opts: t.Unpack[SetupOptions]) -> None:
         cfg["root"]["level"] = level  # pyright: ignore[reportTypedDictNotRequiredAccess]
 
     loggers: dict[str, LoggerConfig] = {}
-    # logger namespace (tree): promote to DEBUG.
+    # logger namespace (tree): set to DEBUG.
     if name := opts.get("name"):
         loggers[name] = {"level": "DEBUG"}
 
@@ -101,27 +127,6 @@ def setup(**opts: t.Unpack[SetupOptions]) -> None:
 
     cfg["loggers"] = loggers
 
-    logging.config.dictConfig(cfg)  # ty: ignore[invalid-argument-type]  # pyright: ignore[reportArgumentType]
-
-    # remove any pre existing `get_logger`-managed stream handlers: let dictConfig rule
-    # the logging tree.
-    for logger_name in logging.Logger.manager.loggerDict:
-        logger = logging.getLogger(logger_name)
-        handlers = [h for h in logger.handlers if h.name and h.name.startswith(LIB)]
-        if handlers:
-            msg = f"dropping {logger_name=} formatter: overwritten by root's config."
-            log.warning(msg)
-            for h in handlers:
-                logger.removeHandler(h)
-            logger.propagate = True
-
-    return
-
-
-def config() -> DictConfig:
-    """Return amox's `dictConfig` mapping with resolved root level."""
-    cfg = copy.deepcopy(read_config())
-    cfg["root"]["level"] = resolve_level()  # pyright: ignore[reportTypedDictNotRequiredAccess]
     return cfg
 
 
@@ -206,8 +211,8 @@ def has_handler(prefix: str = LIB, *, logger: logging.Logger | None = None) -> b
 
 
 @functools.cache
-def read_config() -> DictConfig:
-    """Load and cache the bundled dictConfig JSON file."""
+def dict_config() -> DictConfig:
+    """Load the bundled base dictConfig from JSON."""
     config_file = pathlib.Path(__file__).parent / "dictConfig.json"
-    with open(config_file) as f:  # noqa: PTH123
+    with pathlib.Path.open(config_file) as f:
         return json.load(f)

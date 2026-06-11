@@ -1,11 +1,11 @@
-"""get_logger: produces a single structured log line."""
+"""Produces a single log line from on demand logger."""
 
 import logging
 
 from amox import get_logger
 
 MSG: str = "hello"
-NAME: str = "app.service"
+NAME: str = "src.service"
 LEVEL: int = logging.INFO
 
 if __name__ == "__main__":
