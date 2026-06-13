@@ -2,8 +2,64 @@
 
 import pytest
 
-from amox.env import LOG_LEVEL_ENV, resolve_level
+from amox.env import LOG_FORMAT_ENV, LOG_LEVEL_ENV, resolve_format, resolve_level
 from amox.warnings_ import AmoxConfigWarning
+
+
+class TestResolveFormat:
+    """Tests for `resolve_format`: reads `AMOX_LOG_FORMAT` env var."""
+
+    @pytest.mark.parametrize(
+        ("env", "expected", "warns"),
+        [
+            (None, "logfmt", False),
+            ("logfmt", "logfmt", False),
+            ("json", "json", False),
+            ("JSON", "json", False),
+            ("Logfmt", "logfmt", False),
+            ("  json  ", "json", False),
+            ("yaml", "logfmt", True),
+            ("", "logfmt", True),
+        ],
+        ids=[
+            "unset_default",
+            "logfmt",
+            "json",
+            "json_uppercase",
+            "logfmt_mixed_case",
+            "json_whitespace",
+            "invalid_value",
+            "empty_string",
+        ],
+    )
+    def test_resolve_format(
+        self,
+        env: str | None,
+        expected: str,
+        warns: bool,
+        monkeypatch: pytest.MonkeyPatch,
+        recwarn: pytest.WarningsRecorder,
+    ) -> None:
+        """
+        Resolves format from AMOX_LOG_FORMAT environment variable.
+
+        Invalid values fall back to the default and emit an `AmoxConfigWarning`.
+        """
+        if env is None:
+            monkeypatch.delenv(LOG_FORMAT_ENV, raising=False)
+        else:
+            monkeypatch.setenv(LOG_FORMAT_ENV, env)
+
+        result = resolve_format()
+
+        assert result == expected
+
+        if warns:
+            assert len(recwarn) == 1
+            (warn,) = recwarn
+            assert warn.category is AmoxConfigWarning
+        else:
+            assert len(recwarn) == 0
 
 
 class TestResolveLevel:
@@ -19,9 +75,18 @@ class TestResolveLevel:
             ("ERROR", "ERROR", False),
             ("CRITICAL", "CRITICAL", False),
             ("NOTSET", "NOTSET", False),
+            ("debug", "DEBUG", False),
+            ("Info", "INFO", False),
+            ("  ERROR  ", "ERROR", False),
+            ("10", "DEBUG", False),
+            ("20", "INFO", False),
+            ("30", "WARNING", False),
+            ("40", "ERROR", False),
+            ("50", "CRITICAL", False),
+            ("0", "NOTSET", False),
             ("VERBOSE", "WARNING", True),
-            ("Debug", "WARNING", True),
             ("", "WARNING", True),
+            ("99", "WARNING", True),
         ],
         ids=[
             "unset_default",
@@ -31,9 +96,18 @@ class TestResolveLevel:
             "error",
             "critical",
             "notset",
+            "debug_lowercase",
+            "info_mixed_case",
+            "error_whitespace",
+            "numeric_10",
+            "numeric_20",
+            "numeric_30",
+            "numeric_40",
+            "numeric_50",
+            "numeric_0",
             "invalid_value",
-            "wrong_case",
             "empty_string",
+            "numeric_invalid",
         ],
     )
     def test_resolve_level(
