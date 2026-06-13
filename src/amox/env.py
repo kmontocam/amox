@@ -1,5 +1,6 @@
 """Environment variable conventions and resolution logic."""
 
+import logging
 import os
 import warnings
 
@@ -63,13 +64,14 @@ def resolve_format() -> LogFormat:
     env = os.environ.get(LOG_FORMAT_ENV)
     if env is None:
         return DEFAULT_FORMAT
-    if env in LOG_FORMATS:
-        return env  # ty: ignore[invalid-return-type]
+    normalized = env.strip().lower()
+    if normalized in LOG_FORMATS:
+        return normalized  # ty: ignore[invalid-return-type]
 
     warnings.warn(
         (
             f"{LOG_FORMAT_ENV}={env!r} is not valid."
-            f" Expected one of: {', '.join(LOG_FORMATS)}."
+            f" Expected one of: {', '.join(sorted(LOG_FORMATS))}."
             f" Falling back to {DEFAULT_FORMAT!r}."
         ),
         AmoxConfigWarning,
@@ -84,17 +86,26 @@ def resolve_level() -> LogLevel:
 
     When the environment variable is not set, falls back to `DEFAULT_ROOT_LEVEL`.
     Invalid values trigger an `AmoxConfigWarning` and fall back to the default.
+
+    Reference:
+        `https://docs.python.org/3/library/logging.html#logging-levels`
     """
     env = os.environ.get(LOG_LEVEL_ENV)
     if env is None:
         return DEFAULT_ROOT_LEVEL
-    if env in LOG_LEVELS:
-        return env  # ty: ignore[invalid-return-type]
+    stripped = env.strip()
+    normalized = stripped.upper()
+    if normalized in LOG_LEVELS:
+        return normalized  # ty: ignore[invalid-return-type]
+    if stripped.isdigit():
+        name = logging.getLevelName(int(stripped))
+        if name in LOG_LEVELS:
+            return name  # ty: ignore[invalid-return-type]
 
     warnings.warn(
         (
             f"{LOG_LEVEL_ENV}={env!r} is not a valid log level."
-            f" Expected one of: {', '.join(LOG_LEVELS)}."
+            f" Expected one of: {', '.join(sorted(LOG_LEVELS))}."
             f" Falling back to {DEFAULT_ROOT_LEVEL!r}."
         ),
         AmoxConfigWarning,

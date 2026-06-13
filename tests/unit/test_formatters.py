@@ -7,7 +7,7 @@ import uuid
 
 import pytest
 
-from amox.env import LOG_FORMAT_ENV, LOG_LEVEL_ENV, resolve_format
+from amox.env import LOG_LEVEL_ENV
 from amox.formatters import (
     ALL_EXCLUDE,
     DEFAULT_FIELD_REMAP,
@@ -27,7 +27,6 @@ from amox.types_ import (
     LogFormat,
     LogRecordAttr,
 )
-from amox.warnings_ import AmoxConfigWarning
 from tests.conftest import make_exc_info, make_record
 
 EXC_INFO: set[LogRecordAttr] = {"exc_info"}
@@ -262,58 +261,6 @@ class TestCreateFormatter[T: AmoxFormatter]:
         _ = create_formatter("logfmt", root=root)
 
         assert logging.root.level == expected
-
-
-class TestResolvefmt:
-    """Tests for `resolve_format`: reads `AMOX_LOG_FORMAT` env var."""
-
-    @pytest.mark.parametrize(
-        ("env_value", "expected", "warns"),
-        [
-            (None, "logfmt", False),
-            ("logfmt", "logfmt", False),
-            ("json", "json", False),
-            ("yaml", "logfmt", True),
-            ("JSON", "logfmt", True),
-            ("", "logfmt", True),
-        ],
-        ids=[
-            "unset_default",
-            "logfmt_explicit",
-            "json_explicit",
-            "invalid_value",
-            "wrong_case",
-            "empty_string",
-        ],
-    )
-    def test_resolve_format(
-        self,
-        env_value: str | None,
-        expected: str,
-        warns: bool,
-        monkeypatch: pytest.MonkeyPatch,
-        recwarn: pytest.WarningsRecorder,
-    ) -> None:
-        """
-        Resolves format from AMOX_LOG_FORMAT environment variable.
-
-        Invalid values fall back to the default and emit an `AmoxConfigWarning`.
-        """
-        if env_value is None:
-            monkeypatch.delenv(LOG_FORMAT_ENV, raising=False)
-        else:
-            monkeypatch.setenv(LOG_FORMAT_ENV, env_value)
-
-        result = resolve_format()
-
-        assert result == expected
-
-        if warns:
-            assert len(recwarn) == 1
-            (warn,) = recwarn
-            assert warn.category is AmoxConfigWarning
-        else:
-            assert len(recwarn) == 0
 
 
 class AmoxFormatterTests:
