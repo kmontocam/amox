@@ -12,10 +12,10 @@ from logging.handlers import QueueHandler
 import jsonschema
 import pytest
 
+import amox
 from amox.formatters import AmoxFormatter
 from amox.logging_ import (
     DEFAULT_EXISTING_LOGGER_LEVEL,
-    DEFAULT_QUEUE_HANDLER_NAME,
     DEFAULT_STREAM_HANDLER_NAME,
     config,
     dict_config,
@@ -74,7 +74,7 @@ class TestHasHandler:
     @pytest.mark.parametrize(
         ("handler_name", "expects"),
         [
-            (DEFAULT_QUEUE_HANDLER_NAME, True),
+            (amox.__name__, True),
             (DEFAULT_STREAM_HANDLER_NAME, True),
             ("foreign", False),
             (None, False),
@@ -309,7 +309,7 @@ class TestGetLogger:
     @pytest.mark.parametrize(
         ("handler_name", "expects"),
         [
-            (DEFAULT_QUEUE_HANDLER_NAME, False),
+            (amox.__name__, False),
             (DEFAULT_STREAM_HANDLER_NAME, False),
             ("foreign", True),
         ],

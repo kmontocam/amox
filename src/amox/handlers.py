@@ -2,9 +2,20 @@
 
 import atexit
 import logging
+import sys
 import traceback
 import typing as t
 from logging.handlers import QueueHandler, QueueListener
+from queue import Queue
+
+import amox
+from amox.env import QUEUE_ENV, resolve_bool, resolve_level
+from amox.formatters import AmoxFormatter
+
+DEFAULT_STREAM_HANDLER_NAME = f"{amox.__name__}.{logging.StreamHandler.__name__}"
+"""
+Default handler name set on `StreamHandler` instances.
+"""
 
 
 class LiveQueueHandler(QueueHandler):
@@ -23,6 +34,10 @@ class LiveQueueHandler(QueueHandler):
         if name == "listener" and isinstance(value, QueueListener):
             value.start()
             _ = atexit.register(self.stop_listener)
+        # forward dictConfig assignment to the listener handlers for managed formatters
+        elif name == "formatter" and self.listener and isinstance(value, AmoxFormatter):
+            for h in self.listener.handlers:
+                h.formatter = value
 
     def stop_listener(self) -> None:
         """
@@ -53,3 +68,49 @@ class LiveQueueHandler(QueueHandler):
             ).rstrip("\n")
         record.exc_info = None
         return record
+
+
+def create_handler(
+    *,
+    queue: bool | None = True,
+    formatter: logging.Formatter | None = None,
+    root: bool = False,
+) -> logging.Handler:
+    """
+    Create handler based on configuration.
+
+    Resolve the type and return the corresponding handler instance. Options include
+    a raw `StreamHandler` with `sys.stderr` stream, or the same wrapped inside a
+    `QueueHandler` for non blocking I/O.
+
+    Used mainly as the factory for `dictConfig`'s `()` protocol.
+
+    Note:
+        When `root` is True, `setLevel()` is called on the root logger during
+        factory invocation. Although not a formatter concern, it is embedded to provide
+        a single resolution call for `dictConfig`'s dynamic configuration.
+
+    """
+    logging.root.setLevel(resolve_level()) if root else None
+
+    stream: logging.StreamHandler[t.TextIO] = logging.StreamHandler(stream=sys.stderr)
+    stream.name = DEFAULT_STREAM_HANDLER_NAME
+    # NOTE: dictConfig sends formatter AFTER creation of handler (as `setattr`).
+    # include formatter param for direct factory call
+    stream.formatter = formatter
+
+    use_queue = (
+        queue
+        if queue is not None
+        else use_queue
+        if (use_queue := resolve_bool(QUEUE_ENV)) is not None
+        else True
+    )
+    if not use_queue:
+        return stream
+
+    q = Queue()
+    listener = QueueListener(q, stream, respect_handler_level=True)
+    lqh = LiveQueueHandler(q)
+    lqh.listener = listener
+    return lqh

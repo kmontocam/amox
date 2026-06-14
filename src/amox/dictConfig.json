@@ -3,27 +3,20 @@
   "disable_existing_loggers": false,
   "formatters": {
     "amox": {
-      "()": "amox.formatters.create_formatter",
-      "root": true
+      "()": "amox.formatters.create_formatter"
     }
   },
   "handlers": {
     "amox": {
-      "class": "logging.StreamHandler",
+      "()": "amox.handlers.create_handler",
       "formatter": "amox",
-      "stream": "ext://sys.stderr"
-    },
-    "amox.LiveQueueHandler": {
-      "class": "amox.handlers.LiveQueueHandler",
-      "handlers": [
-        "amox"
-      ],
-      "respect_handler_level": true
+      "queue": true,
+      "root": true
     }
   },
   "root": {
     "handlers": [
-      "amox.LiveQueueHandler"
+      "amox"
     ]
   },
   "version": 1

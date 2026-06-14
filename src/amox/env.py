@@ -18,6 +18,11 @@ LOG_LEVEL_ENV = "AMOX_LOG_LEVEL"
 Convention environment variable name to configure the root logger level.
 """
 
+QUEUE_ENV = "AMOX_QUEUE"
+"""
+Convention environment variable name to enable/disable queue-based I/O.
+"""
+
 LOG_FORMATS: set[LogFormat] = {"json", "logfmt"}
 """
 Valid log format identifiers for `AMOX_LOG_FORMAT`.

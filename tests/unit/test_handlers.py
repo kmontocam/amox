@@ -8,7 +8,9 @@ from queue import SimpleQueue
 import pytest
 
 import amox.handlers
-from amox.handlers import LiveQueueHandler
+from amox.env import LOG_LEVEL_ENV, QUEUE_ENV
+from amox.formatters import LogfmtFormatter
+from amox.handlers import LiveQueueHandler, create_handler
 from tests.conftest import make_exc_info, make_record
 
 
@@ -99,3 +101,120 @@ class TestLiveQueueHandler:
 
         assert prepared.exc_info is None
         assert prepared.exc_text is None
+
+
+class TestCreateHandler:
+    """Tests for the `create_handler` factory function."""
+
+    def test_default(
+        self,
+    ) -> None:
+        """Default behavior creates a LiveQueueHandler."""
+        handler = create_handler()
+
+        assert isinstance(handler, LiveQueueHandler)
+        handler.stop_listener()
+
+    def test_non_queue(self) -> None:
+        """queue=False returns a plain StreamHandler."""
+        handler = create_handler(queue=False)
+
+        assert isinstance(handler, logging.StreamHandler)
+        assert not isinstance(handler, LiveQueueHandler)
+
+    @pytest.mark.parametrize(
+        ("env", "expected"),
+        [
+            ("false", logging.StreamHandler),
+            ("true", LiveQueueHandler),
+        ],
+        ids=[
+            "env_false_stream",
+            "env_true_queue",
+        ],
+    )
+    def test_queue_env(
+        self,
+        env: str,
+        expected: type[logging.Handler],
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """queue=None defers to `AMOX_QUEUE` env var."""
+        monkeypatch.setenv(QUEUE_ENV, env)
+        handler = create_handler(queue=None)
+
+        assert isinstance(handler, expected)
+        if isinstance(handler, LiveQueueHandler):
+            handler.stop_listener()
+
+    def test_queue_overrides_env(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Explicit queue parameter overrides `AMOX_QUEUE` env var."""
+        monkeypatch.setenv(QUEUE_ENV, "true")
+        handler = create_handler(queue=False)
+
+        assert isinstance(handler, logging.StreamHandler)
+
+    @pytest.mark.parametrize(
+        ("env", "expected"),
+        [
+            ("INFO", logging.INFO),
+            ("ERROR", logging.ERROR),
+            ("DEBUG", logging.DEBUG),
+        ],
+        ids=[
+            "info",
+            "error",
+            "debug",
+        ],
+    )
+    def test_root(
+        self,
+        env: str,
+        expected: int,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """root=True sets the root logger level from env var."""
+        monkeypatch.setenv(LOG_LEVEL_ENV, env)
+
+        handler = create_handler(root=True)
+
+        assert logging.root.level == expected
+        if isinstance(handler, LiveQueueHandler):
+            handler.stop_listener()
+
+    def test_root_no_side_effect(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """root=False does not modify the root logger level."""
+        monkeypatch.setenv(LOG_LEVEL_ENV, "INFO")
+        logging.root.setLevel(logging.WARNING)
+
+        handler = create_handler(root=False)
+
+        assert logging.root.level == logging.WARNING
+        if isinstance(handler, LiveQueueHandler):
+            handler.stop_listener()
+
+    def test_queue_inner_formatter(self) -> None:
+        """Formatter parameter is attached to the inner StreamHandler."""
+        formatter = LogfmtFormatter()
+        handler = create_handler(queue=True, formatter=formatter)
+
+        assert isinstance(handler, LiveQueueHandler)
+        inner_handlers = handler.listener.handlers  # ty: ignore[unresolved-attribute]
+        assert len(inner_handlers) == 1
+        (inner_handler,) = inner_handlers
+        assert inner_handler.formatter is formatter
+        handler.stop_listener()
+
+    def test_stream_formatter(self) -> None:
+        """Formatter is attached directly when queue=False."""
+        formatter = LogfmtFormatter()
+        handler = create_handler(queue=False, formatter=formatter)
+
+        assert isinstance(handler, logging.StreamHandler)
+        assert handler.formatter is formatter

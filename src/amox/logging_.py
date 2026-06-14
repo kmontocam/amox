@@ -10,8 +10,9 @@ import types
 import typing as t
 import warnings
 
+import amox
 from amox.formatters import AmoxFormatter, create_formatter
-from amox.handlers import LiveQueueHandler
+from amox.handlers import DEFAULT_STREAM_HANDLER_NAME
 from amox.types_ import (
     ConfigOptions,
     DictConfig,
@@ -23,28 +24,12 @@ from amox.types_ import (
 )
 from amox.warnings_ import AmoxFormatWarning
 
-LIB = f"{__package__}"
-"""
-Library name, reference for `dictConfig`'s custom objects.
-"""
-
-
 DEFAULT_EXISTING_LOGGER_LEVEL: LogLevel = "WARNING"
 """
 Default log level on setup when viewing logs of third party packages.
 """
 
-DEFAULT_QUEUE_HANDLER_NAME = f"{LIB}.{LiveQueueHandler.__name__}"
-"""
-Default handler (queue) name included on `dictConfig`.
-"""
-
-DEFAULT_STREAM_HANDLER_NAME = f"{LIB}.{logging.StreamHandler.__name__}"
-"""
-Default handler name set on `StreamHandler` instances.
-"""
-
-log = logging.getLogger(LIB)
+log = logging.getLogger(amox.__name__)
 """
 Library logger for internal messages.
 """
@@ -69,7 +54,9 @@ def setup(**opts: t.Unpack[SetupOptions]) -> None:
     # the logging tree.
     for logger_name in logging.Logger.manager.loggerDict:
         logger = logging.getLogger(logger_name)
-        handlers = [h for h in logger.handlers if h.name and h.name.startswith(LIB)]
+        handlers = [
+            h for h in logger.handlers if h.name and h.name.startswith(amox.__name__)
+        ]
         if handlers:
             msg = f"dropping {logger_name=} formatter: overwritten by root's config."
             log.warning(msg)
@@ -90,7 +77,7 @@ def config(**opts: t.Unpack[ConfigOptions]) -> DictConfig:
     cfg = copy.deepcopy(dict_config())
 
     # forward formatter opts into baked-in formatter factory
-    formatter_cfg: dict[str, object] = cfg["formatters"][LIB]  # ty: ignore[invalid-assignment]
+    formatter_cfg: dict[str, object] = cfg["formatters"][amox.__name__]  # ty: ignore[invalid-assignment]
 
     formatter_cfg.update(
         {key: opts.get(key) for key in set(opts) & AmoxFormatter.configurable},
@@ -100,10 +87,8 @@ def config(**opts: t.Unpack[ConfigOptions]) -> DictConfig:
     formatter_cfg.update(format=fmt) if (fmt := opts.get("format")) else None
     formatter_cfg.update({".": {"tz": tz}}) if (tz := opts.get("tz")) else None
 
-    use_queue = opts.get("queue", True)
-    if not use_queue:
-        _ = cfg["handlers"].pop(DEFAULT_QUEUE_HANDLER_NAME)  # type: ignore[misc]
-        cfg["root"]["handlers"] = [LIB]
+    # explicit queue overrides env var / default
+    cfg["handlers"][amox.__name__]["queue"] = opts.get("queue")  # ty: ignore[invalid-assignment]
 
     # explicit level overrides env var / default
     if level := opts.get("level"):
@@ -198,7 +183,9 @@ def get_logger(
     return logger
 
 
-def has_handler(prefix: str = LIB, *, logger: logging.Logger | None = None) -> bool:
+def has_handler(
+    prefix: str = amox.__name__, *, logger: logging.Logger | None = None
+) -> bool:
     """
     Whether any handler on the target logger is named after a given prefix.
 

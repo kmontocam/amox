@@ -425,6 +425,18 @@ Reference:
     `https://docs.python.org/3/library/logging.handlers.html#logging.NullHandler`
 """
 
+
+class AnyHandlerConfig(t.TypedDict, total=False):
+    """
+    Handler configuration using the `()` protocol for managed handlers.
+
+    Covers handlers created via `dictConfig`'s `()` syntax, where arbitrary keyword
+    arguments are passed to the callable.
+    """
+
+    __extra_items__: object
+
+
 type HandlerConfig = (
     StreamHandlerConfig
     | FileHandlerConfig
@@ -440,6 +452,7 @@ type HandlerConfig = (
     | HTTPHandlerConfig
     | QueueHandlerConfig
     | NullHandlerConfig
+    | AnyHandlerConfig
 )
 
 
@@ -557,6 +570,6 @@ class ConfigOptions(FormatterOptions, total=False):
 
     queue: bool
     """
-    Whether to wrap the handler in a `QueueHandler` for non-blocking I/O. Defaults to
-    `True`.
+    Whether to wrap the handler in a `QueueHandler` for non-blocking I/O. When omitted,
+    reads from `AMOX_QUEUE` env var, defaulting to `True`.
     """
