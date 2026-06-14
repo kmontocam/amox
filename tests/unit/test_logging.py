@@ -392,7 +392,7 @@ class TestSetup:
         assert len(queue_handlers) == 1
 
     def test_queue_disabled(self) -> None:
-        """`setup(queue=False)` installs a direct StreamHandler, no queue."""
+        """queue=False installs a direct StreamHandler, no queue."""
         setup(queue=False)
 
         queue_handlers = [
@@ -436,20 +436,20 @@ class TestSetup:
         name: str,
         level: LogLevel,
     ) -> None:
-        """`setup(loggers=[{"module": ..., "level": "ERROR"}])` sets explicit level."""
+        """loggers=[{"module": ..., "level": "ERROR"}] sets explicit level."""
         setup(loggers=[{"module": reference, "level": level}])
 
         assert logging.getLogger(name).level == logging.getLevelNamesMapping()[level]
 
     def test_name_scopes(self) -> None:
-        """`setup(name=...)` sets named logger to DEBUG, root stays at WARNING."""
+        """name=... sets named logger to DEBUG, root stays at WARNING."""
         setup(name=SRC_LOGGER_PREFIX)
 
         assert logging.getLogger(SRC_LOGGER_PREFIX).level == logging.DEBUG
         assert logging.root.level == logging.WARNING
 
     def test_removes_get_logger_handlers(self) -> None:
-        """`setup()` removes handlers from `get_logger`-configured loggers."""
+        """Removes handlers from `get_logger`-configured loggers."""
         logger = get_logger(f"{SRC_LOGGER_PREFIX}.removal")
         assert has_handler(logger=logger)
 

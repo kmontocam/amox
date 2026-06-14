@@ -44,7 +44,7 @@ class TestSetup(ParsabilityTests):
         parser: LogLineParser,
         script_runner: ScriptRunner,
     ) -> None:
-        """`setup(name=...)` sets log level to DEBUG."""
+        """name=... sets log level to DEBUG."""
         filename = pathlib.Path(setup_name_scope.__file__).name
         env = {**os.environ, LOG_FORMAT_ENV: log_format}
         result: ScriptResult = script_runner(filename, env=env)
