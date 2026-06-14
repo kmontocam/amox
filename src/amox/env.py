@@ -2,6 +2,7 @@
 
 import logging
 import os
+import typing as t
 import warnings
 
 from amox.types_ import LogFormat, LogLevel
@@ -32,6 +33,22 @@ LOG_LEVELS: set[LogLevel] = {
 }
 """
 Valid log level names for `AMOX_LOG_LEVEL`.
+"""
+
+BOOL_TRUTHY: frozenset[t.Literal["1", "true"]] = frozenset({"1", "true"})
+"""
+Accepted truthy values for boolean environment variables.
+
+Reference:
+    `https://pkg.go.dev/strconv#ParseBool`
+"""
+
+BOOL_FALSY: frozenset[t.Literal["0", "false"]] = frozenset({"0", "false"})
+"""
+Accepted falsy values for boolean environment variables.
+
+Reference:
+    `https://pkg.go.dev/strconv#ParseBool`
 """
 
 DEFAULT_FORMAT: LogFormat = "logfmt"
@@ -88,7 +105,7 @@ def resolve_level() -> LogLevel:
     Invalid values trigger an `AmoxConfigWarning` and fall back to the default.
 
     Reference:
-        `https://docs.python.org/3/library/logging.html#logging-levels`
+        - `https://docs.python.org/3/library/logging.html#logging-levels`
     """
     env = os.environ.get(LOG_LEVEL_ENV)
     if env is None:
@@ -112,3 +129,36 @@ def resolve_level() -> LogLevel:
         stacklevel=2,
     )
     return DEFAULT_ROOT_LEVEL
+
+
+def resolve_bool(env_name: str) -> bool | None:
+    """
+    Resolve a boolean from the given environment variable.
+
+    Returns `None` when the variable is unset.
+    Invalid values trigger an `AmoxConfigWarning` and return `None`.
+
+    Reference:
+        `https://pkg.go.dev/strconv#ParseBool`
+    """
+    env = os.environ.get(env_name)
+    if env is None:
+        return None
+    normalized = env.strip().lower()
+    if normalized in BOOL_TRUTHY:
+        return True
+    if normalized in BOOL_FALSY:
+        return False
+
+    truthy = ", ".join(sorted(BOOL_TRUTHY))
+    falsy = ", ".join(sorted(BOOL_FALSY))
+    warnings.warn(
+        (
+            f"{env_name}={env!r} is not a valid boolean."
+            f" Expected one of: {truthy} (truthy) or {falsy} (falsy)."
+            f" Ignoring."
+        ),
+        AmoxConfigWarning,
+        stacklevel=2,
+    )
+    return None
