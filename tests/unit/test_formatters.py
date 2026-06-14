@@ -226,6 +226,29 @@ class TestCreateFormatter[T: AmoxFormatter]:
         formatter = create_formatter(log_format)
         assert isinstance(formatter, expected)
 
+    @pytest.mark.parametrize(
+        ("env", "expected"),
+        [
+            ("json", JsonFormatter),
+            ("logfmt", LogfmtFormatter),
+        ],
+        ids=[
+            "json",
+            "logfmt",
+        ],
+    )
+    def test_format_env(
+        self,
+        env: str,
+        expected: type[AmoxFormatter],
+        create_formatter: CreateFormatter,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Format resolved from AMOX_LOG_FORMAT env var."""
+        monkeypatch.setenv("AMOX_LOG_FORMAT", env)
+        formatter = create_formatter()
+        assert isinstance(formatter, expected)
+
 
 class AmoxFormatterTests:
     """
