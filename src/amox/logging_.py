@@ -39,8 +39,7 @@ def setup(**opts: t.Unpack[SetupOptions]) -> None:
     """
     Configure root logger with schema based formatter.
 
-    Appends a `StreamHandler` on the root logger. All loggers in the process inherit
-    the handler and emit semi-structured output.
+    All loggers in the process apply configuration and emit semi-structured output.
     """
     # early exit if no modifications and root handler already modified
     if not opts and has_handler():
