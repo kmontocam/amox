@@ -9,7 +9,7 @@ from logging.handlers import QueueHandler, QueueListener
 from queue import Queue
 
 import amox
-from amox.env import LOG_QUEUE_ENV, resolve_bool, resolve_level
+from amox.env import DEFAULT_QUEUE, LOG_QUEUE_ENV, resolve_bool, resolve_level
 from amox.formatters import QueueMixin
 
 DEFAULT_STREAM_HANDLER_NAME = f"{amox.__name__}.{logging.StreamHandler.__name__}"
@@ -110,7 +110,7 @@ def create_handler(
         if queue is not None
         else use_queue
         if (use_queue := resolve_bool(LOG_QUEUE_ENV)) is not None
-        else True
+        else DEFAULT_QUEUE
     )
     if not use_queue:
         return stream

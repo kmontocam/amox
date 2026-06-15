@@ -56,12 +56,13 @@ Reference:
     `https://pkg.go.dev/strconv#ParseBool`
 """
 
+
 DEFAULT_FORMAT: LogFormat = "logfmt"
 """
 Fallback log format when `AMOX_LOG_FORMAT` is unset.
 """
 
-DEFAULT_ROOT_LEVEL: LogLevel = "WARNING"
+DEFAULT_LEVEL: LogLevel = "WARNING"
 """
 Fallback log level when `AMOX_LOG_LEVEL` is unset.
 
@@ -73,6 +74,11 @@ logging HOWTO regards this as *"the best default behavior"*.
 Reference:
     — `https://docs.python.org/3/library/logging.html#logging.Logger.setLevel`
     - `https://docs.python.org/3/howto/logging.html#configuring-logging-for-a-library`
+"""
+
+DEFAULT_QUEUE = True
+"""
+Fallback usage of queue handler when `AMOX_QUEUE` is unset.
 """
 
 
@@ -114,7 +120,7 @@ def resolve_level() -> LogLevel:
     """
     env = os.environ.get(LOG_LEVEL_ENV)
     if env is None:
-        return DEFAULT_ROOT_LEVEL
+        return DEFAULT_LEVEL
     stripped = env.strip()
     normalized = stripped.upper()
     if normalized in LOG_LEVELS:
@@ -128,12 +134,12 @@ def resolve_level() -> LogLevel:
         (
             f"{LOG_LEVEL_ENV}={env!r} is not a valid log level."
             f" Expected one of: {', '.join(sorted(LOG_LEVELS))}."
-            f" Falling back to {DEFAULT_ROOT_LEVEL!r}."
+            f" Falling back to {DEFAULT_LEVEL!r}."
         ),
         AmoxConfigWarning,
         stacklevel=2,
     )
-    return DEFAULT_ROOT_LEVEL
+    return DEFAULT_LEVEL
 
 
 def resolve_bool(env_name: str) -> bool | None:
