@@ -8,7 +8,7 @@ from queue import SimpleQueue
 import pytest
 
 import amox.handlers
-from amox.env import LOG_LEVEL_ENV, QUEUE_ENV
+from amox.env import LOG_LEVEL_ENV, LOG_QUEUE_ENV
 from amox.formatters import LogfmtFormatter
 from amox.handlers import LiveQueueHandler, create_handler
 from tests.conftest import make_exc_info, make_record
@@ -140,7 +140,7 @@ class TestCreateHandler:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """queue=None defers to `AMOX_QUEUE` env var."""
-        monkeypatch.setenv(QUEUE_ENV, env)
+        monkeypatch.setenv(LOG_QUEUE_ENV, env)
         handler = create_handler(queue=None)
 
         assert isinstance(handler, expected)
@@ -152,7 +152,7 @@ class TestCreateHandler:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Explicit queue parameter overrides `AMOX_QUEUE` env var."""
-        monkeypatch.setenv(QUEUE_ENV, "true")
+        monkeypatch.setenv(LOG_QUEUE_ENV, "true")
         handler = create_handler(queue=False)
 
         assert isinstance(handler, logging.StreamHandler)
