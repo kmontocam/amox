@@ -73,7 +73,19 @@ Always excluded attributes from log record.
 """
 
 
-class AmoxFormatter(logging.Formatter):
+class QueueMixin:
+    """Queue-aware configuration for formatters."""
+
+    forward_on_listener: bool = True
+    """
+    Whether to forward formatter to listener's handlers.
+
+    Convention used to assign formatter to queue listener's handlers (source) on
+    assignment. Helpful on assignment of custom queue handler via dictConfig.
+    """
+
+
+class AmoxFormatter(logging.Formatter, QueueMixin):
     """Base formatter with shared field extraction logic."""
 
     configurable: frozenset[

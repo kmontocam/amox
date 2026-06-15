@@ -10,7 +10,7 @@ from queue import Queue
 
 import amox
 from amox.env import LOG_QUEUE_ENV, resolve_bool, resolve_level
-from amox.formatters import AmoxFormatter
+from amox.formatters import QueueMixin
 
 DEFAULT_STREAM_HANDLER_NAME = f"{amox.__name__}.{logging.StreamHandler.__name__}"
 """
@@ -35,7 +35,13 @@ class LiveQueueHandler(QueueHandler):
             value.start()
             _ = atexit.register(self.stop_listener)
         # forward dictConfig assignment to the listener handlers for managed formatters
-        elif name == "formatter" and self.listener and isinstance(value, AmoxFormatter):
+        elif (
+            name == "formatter"
+            and self.listener
+            and isinstance(value, logging.Formatter)
+            and isinstance(value, QueueMixin)
+            and value.forward_on_listener
+        ):
             for h in self.listener.handlers:
                 h.formatter = value
 
