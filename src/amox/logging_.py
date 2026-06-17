@@ -12,7 +12,7 @@ import warnings
 
 import amox
 from amox.formatters import AmoxFormatter, create_formatter
-from amox.handlers import DEFAULT_STREAM_HANDLER_NAME
+from amox.handlers import create_handler
 from amox.types_ import (
     ConfigOptions,
     DictConfig,
@@ -162,18 +162,23 @@ def get_logger(
             stacklevel=2,
         )
 
+    formatter = create_formatter(log_format, **opts)
+
     if configured_by_setup:
-        for h in handlers or []:
+        for h in handlers or list[logging.Handler]():
+            h.formatter = formatter
             logger.addHandler(h)
         logger.setLevel(level)
         # early exit on stream handler because of setup
         return logger
 
-    stream = logging.StreamHandler()
-    stream.name = DEFAULT_STREAM_HANDLER_NAME
-    stream.setFormatter(create_formatter(log_format, **opts))  # ty: ignore[no-matching-overload]
-    logger.addHandler(stream)
-    for h in handlers or []:
+    # NOTE: disabled to prevent spawn of unsupervised count of threads on multiple
+    # calls to get_logger
+    handler = create_handler(queue=False, formatter=formatter)
+    logger.addHandler(handler)
+
+    for h in handlers or list[logging.Handler]():
+        h.formatter = formatter
         logger.addHandler(h)
     logger.setLevel(level)
     if name is not None:

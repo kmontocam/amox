@@ -14,9 +14,9 @@ import pytest
 
 import amox
 from amox.formatters import AmoxFormatter
+from amox.handlers import DEFAULT_STREAM_HANDLER_NAME
 from amox.logging_ import (
     DEFAULT_EXISTING_LOGGER_LEVEL,
-    DEFAULT_STREAM_HANDLER_NAME,
     config,
     dict_config,
     get_logger,
@@ -188,13 +188,13 @@ class TestGetLogger:
         _ = get_logger(f"{SRC_LOGGER_PREFIX}.only")
         assert other.handlers == handlers
 
-    def test_handlers_untouched(self) -> None:
-        """Additional handlers have no formatter attached by amox."""
+    def test_handlers_formatter(self) -> None:
+        """Additional handlers have formatter attached by amox."""
         handler = logging.StreamHandler(io.StringIO())
         logger = get_logger(f"{SRC_LOGGER_PREFIX}.user", handlers=[handler])
 
         assert handler in logger.handlers
-        assert handler.formatter is None
+        assert isinstance(handler.formatter, AmoxFormatter)
 
     def test_multiple_handlers(self) -> None:
         """All user-provided handlers are added alongside the default handler."""

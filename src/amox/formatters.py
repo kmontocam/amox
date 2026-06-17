@@ -338,6 +338,16 @@ def create_formatter(
 ) -> LogfmtFormatter: ...
 
 
+@t.overload
+def create_formatter(
+    log_format: LogFormat | None = None,
+    /,
+    *,
+    root: bool = False,
+    **opts: t.Unpack[FormatterOptions],
+) -> JsonFormatter | LogfmtFormatter: ...
+
+
 def create_formatter(
     log_format: LogFormat | None = None,
     /,
