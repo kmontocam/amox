@@ -12,11 +12,6 @@ import amox
 from amox.env import DEFAULT_QUEUE, LOG_QUEUE_ENV, resolve_bool, resolve_level
 from amox.formatters import QueueMixin
 
-DEFAULT_STREAM_HANDLER_NAME = f"{amox.__name__}.{logging.StreamHandler.__name__}"
-"""
-Default handler name set on `StreamHandler` instances.
-"""
-
 
 class LiveQueueHandler(QueueHandler):
     """
@@ -100,9 +95,7 @@ def create_handler(
     logging.root.setLevel(resolve_level()) if root else None
 
     stream: logging.StreamHandler[t.TextIO] = logging.StreamHandler(stream=sys.stderr)
-    stream.name = DEFAULT_STREAM_HANDLER_NAME
-    # NOTE: dictConfig sends formatter AFTER creation of handler (as `setattr`).
-    # include formatter param for direct factory call
+    stream.name = amox.__name__
     stream.formatter = formatter
 
     use_queue = (

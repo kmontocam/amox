@@ -14,7 +14,6 @@ import pytest
 
 import amox
 from amox.formatters import AmoxFormatter
-from amox.handlers import DEFAULT_STREAM_HANDLER_NAME
 from amox.logging_ import (
     DEFAULT_EXISTING_LOGGER_LEVEL,
     config,
@@ -75,11 +74,10 @@ class TestHasHandler:
         ("handler_name", "expects"),
         [
             (amox.__name__, True),
-            (DEFAULT_STREAM_HANDLER_NAME, True),
             ("foreign", False),
             (None, False),
         ],
-        ids=["queue_handler", "stream_handler", "foreign", "unnamed"],
+        ids=["managed", "foreign", "unnamed"],
     )
     def test_on_root(
         self,
@@ -96,7 +94,7 @@ class TestHasHandler:
     @pytest.mark.parametrize(
         ("handler_name", "expects"),
         [
-            (DEFAULT_STREAM_HANDLER_NAME, True),
+            (amox.__name__, True),
             ("foreign", False),
             (None, False),
         ],
@@ -151,7 +149,7 @@ class TestGetLogger:
         """StreamHandler is named with the library prefix."""
         logger = get_logger(f"{SRC_LOGGER_PREFIX}.handler_name")
         (handler,) = logger.handlers
-        assert handler.name == DEFAULT_STREAM_HANDLER_NAME
+        assert handler.name == amox.__name__
 
     def test_default_handler(self) -> None:
         """Attaches a StreamHandler with an AmoxFormatter by default."""
@@ -310,10 +308,9 @@ class TestGetLogger:
         ("handler_name", "expects"),
         [
             (amox.__name__, False),
-            (DEFAULT_STREAM_HANDLER_NAME, False),
             ("foreign", True),
         ],
-        ids=["queue_handler", "stream_handler", "foreign_handler"],
+        ids=["managed_handler", "foreign_handler"],
     )
     def test_setup_early_exit(
         self,
