@@ -78,7 +78,7 @@ class LiveQueueHandler(QueueHandler):
 
 def create_handler(
     *,
-    queue: bool | None = True,
+    queue: bool | None = None,
     formatter: logging.Formatter | None = None,
     root: bool = False,
 ) -> logging.Handler:
