@@ -12,7 +12,7 @@ import warnings
 
 import amox
 from amox.formatters import AmoxFormatter, create_formatter
-from amox.handlers import create_handler
+from amox.handlers import create_handler, has_handler
 from amox.types_ import (
     ConfigOptions,
     DictConfig,
@@ -185,20 +185,6 @@ def get_logger(
         logger.propagate = False
 
     return logger
-
-
-def has_handler(
-    prefix: str = amox.__name__, *, logger: logging.Logger | None = None
-) -> bool:
-    """
-    Whether any handler on the target logger is named after a given prefix.
-
-    `dictConfig` sets `handler.name` to the dict key, so handlers installed via
-    `setup()` will have names starting with the package name. Defaults to the root
-    logger.
-    """
-    target = logger or logging.getLogger()
-    return any(h.name and h.name.startswith(prefix) for h in target.handlers)
 
 
 @functools.cache

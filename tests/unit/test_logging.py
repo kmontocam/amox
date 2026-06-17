@@ -14,12 +14,12 @@ import pytest
 
 import amox
 from amox.formatters import AmoxFormatter
+from amox.handlers import has_handler
 from amox.logging_ import (
     DEFAULT_EXISTING_LOGGER_LEVEL,
     config,
     dict_config,
     get_logger,
-    has_handler,
     setup,
 )
 from amox.parsers import JsonParser, LogfmtParser, LogLineParser

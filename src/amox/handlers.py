@@ -113,3 +113,17 @@ def create_handler(
     lqh = LiveQueueHandler(q)
     lqh.listener = listener
     return lqh
+
+
+def has_handler(
+    prefix: str = amox.__name__, *, logger: logging.Logger | None = None
+) -> bool:
+    """
+    Whether any handler on the target logger is named after a given prefix.
+
+    `dictConfig` sets `handler.name` to the dict key, so handlers installed via
+    `setup()` will have names starting with the package name. Defaults to the root
+    logger.
+    """
+    target = logger or logging.getLogger()
+    return any(h.name and h.name.startswith(prefix) for h in target.handlers)
