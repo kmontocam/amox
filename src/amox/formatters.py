@@ -6,7 +6,7 @@ import logging
 import re
 import typing as t
 
-from amox.env import resolve_format, resolve_level
+from amox.env import resolve_format
 from amox.types_ import (
     FieldRemap,
     FormatterOptions,
@@ -73,7 +73,19 @@ Always excluded attributes from log record.
 """
 
 
-class AmoxFormatter(logging.Formatter):
+class QueueMixin:
+    """Queue-aware configuration for formatters."""
+
+    forward_on_listener: bool = True
+    """
+    Whether to forward formatter to listener's handlers.
+
+    Convention used to assign formatter to queue listener's handlers (source) on
+    assignment. Helpful on assignment of custom queue handler via dictConfig.
+    """
+
+
+class AmoxFormatter(logging.Formatter, QueueMixin):
     """Base formatter with shared field extraction logic."""
 
     configurable: frozenset[
@@ -326,27 +338,27 @@ def create_formatter(
 ) -> LogfmtFormatter: ...
 
 
+@t.overload
 def create_formatter(
     log_format: LogFormat | None = None,
     /,
     *,
     root: bool = False,
     **opts: t.Unpack[FormatterOptions],
+) -> JsonFormatter | LogfmtFormatter: ...
+
+
+def create_formatter(
+    log_format: LogFormat | None = None,
+    /,
+    **opts: t.Unpack[FormatterOptions],
 ) -> JsonFormatter | LogfmtFormatter:
     """
     Create a formatter from a format identifier string.
 
     Resolve the log format and return the corresponding formatter instance.
-    Used as the factory for `dictConfig`'s `()` protocol.
-
-    Note:
-        When `root` is True, `setLevel()` is called on the root logger during
-        factory invocation. Although not a formatter concern, it is embedded to provide
-        a single resolution call for `dictConfig`'s dynamic configuration.
-
+    Used mainly as the factory for `dictConfig`'s `()` protocol.
     """
-    logging.root.setLevel(resolve_level()) if root else None
-
     log_format = log_format or resolve_format()
     tz = opts.get("tz")
     field_remap: FieldRemap = {

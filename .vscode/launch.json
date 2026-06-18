@@ -1,0 +1,17 @@
+{
+  "configurations": [
+    {
+      "args": [
+        "-xvs",
+        "${file}"
+      ],
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "module": "pytest",
+      "name": "Pytest: Current File",
+      "request": "launch",
+      "type": "debugpy"
+    }
+  ],
+  "version": "0.2.0"
+}

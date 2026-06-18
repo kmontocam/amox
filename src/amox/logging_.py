@@ -10,8 +10,9 @@ import types
 import typing as t
 import warnings
 
+import amox
 from amox.formatters import AmoxFormatter, create_formatter
-from amox.handlers import LiveQueueHandler
+from amox.handlers import create_handler, has_handler
 from amox.types_ import (
     ConfigOptions,
     DictConfig,
@@ -23,28 +24,12 @@ from amox.types_ import (
 )
 from amox.warnings_ import AmoxFormatWarning
 
-LIB = f"{__package__}"
-"""
-Library name, reference for `dictConfig`'s custom objects.
-"""
-
-
 DEFAULT_EXISTING_LOGGER_LEVEL: LogLevel = "WARNING"
 """
 Default log level on setup when viewing logs of third party packages.
 """
 
-DEFAULT_QUEUE_HANDLER_NAME = f"{LIB}.{LiveQueueHandler.__name__}"
-"""
-Default handler (queue) name included on `dictConfig`.
-"""
-
-DEFAULT_STREAM_HANDLER_NAME = f"{LIB}.{logging.StreamHandler.__name__}"
-"""
-Default handler name set on `StreamHandler` instances.
-"""
-
-log = logging.getLogger(LIB)
+log = logging.getLogger(amox.__name__)
 """
 Library logger for internal messages.
 """
@@ -54,8 +39,7 @@ def setup(**opts: t.Unpack[SetupOptions]) -> None:
     """
     Configure root logger with schema based formatter.
 
-    Appends a `StreamHandler` on the root logger. All loggers in the process inherit
-    the handler and emit semi-structured output.
+    All loggers in the process apply configuration and emit semi-structured output.
     """
     # early exit if no modifications and root handler already modified
     if not opts and has_handler():
@@ -69,7 +53,9 @@ def setup(**opts: t.Unpack[SetupOptions]) -> None:
     # the logging tree.
     for logger_name in logging.Logger.manager.loggerDict:
         logger = logging.getLogger(logger_name)
-        handlers = [h for h in logger.handlers if h.name and h.name.startswith(LIB)]
+        handlers = [
+            h for h in logger.handlers if h.name and h.name.startswith(amox.__name__)
+        ]
         if handlers:
             msg = f"dropping {logger_name=} formatter: overwritten by root's config."
             log.warning(msg)
@@ -90,7 +76,7 @@ def config(**opts: t.Unpack[ConfigOptions]) -> DictConfig:
     cfg = copy.deepcopy(dict_config())
 
     # forward formatter opts into baked-in formatter factory
-    formatter_cfg: dict[str, object] = cfg["formatters"][LIB]  # ty: ignore[invalid-assignment]
+    formatter_cfg: dict[str, object] = cfg["formatters"][amox.__name__]  # ty: ignore[invalid-assignment]
 
     formatter_cfg.update(
         {key: opts.get(key) for key in set(opts) & AmoxFormatter.configurable},
@@ -100,10 +86,8 @@ def config(**opts: t.Unpack[ConfigOptions]) -> DictConfig:
     formatter_cfg.update(format=fmt) if (fmt := opts.get("format")) else None
     formatter_cfg.update({".": {"tz": tz}}) if (tz := opts.get("tz")) else None
 
-    use_queue = opts.get("queue", True)
-    if not use_queue:
-        _ = cfg["handlers"].pop(DEFAULT_QUEUE_HANDLER_NAME)  # type: ignore[misc]
-        cfg["root"]["handlers"] = [LIB]
+    # explicit queue overrides env var / default
+    cfg["handlers"][amox.__name__]["queue"] = opts.get("queue")  # ty: ignore[invalid-assignment]
 
     # explicit level overrides env var / default
     if level := opts.get("level"):
@@ -178,36 +162,29 @@ def get_logger(
             stacklevel=2,
         )
 
+    formatter = create_formatter(log_format, **opts)
+
     if configured_by_setup:
-        for h in handlers or []:
+        for h in handlers or list[logging.Handler]():
+            h.formatter = formatter
             logger.addHandler(h)
         logger.setLevel(level)
         # early exit on stream handler because of setup
         return logger
 
-    stream = logging.StreamHandler()
-    stream.name = DEFAULT_STREAM_HANDLER_NAME
-    stream.setFormatter(create_formatter(log_format, **opts))  # ty: ignore[no-matching-overload]
-    logger.addHandler(stream)
-    for h in handlers or []:
+    # NOTE: disabled to prevent spawn of unsupervised count of threads on multiple
+    # calls to get_logger
+    handler = create_handler(queue=False, formatter=formatter)
+    logger.addHandler(handler)
+
+    for h in handlers or list[logging.Handler]():
+        h.formatter = formatter
         logger.addHandler(h)
     logger.setLevel(level)
     if name is not None:
         logger.propagate = False
 
     return logger
-
-
-def has_handler(prefix: str = LIB, *, logger: logging.Logger | None = None) -> bool:
-    """
-    Whether any handler on the target logger is named after a given prefix.
-
-    `dictConfig` sets `handler.name` to the dict key, so handlers installed via
-    `setup()` will have names starting with the package name. Defaults to the root
-    logger.
-    """
-    target = logger or logging.getLogger()
-    return any(h.name and h.name.startswith(prefix) for h in target.handlers)
 
 
 @functools.cache

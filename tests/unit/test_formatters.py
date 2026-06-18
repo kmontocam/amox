@@ -7,7 +7,6 @@ import uuid
 
 import pytest
 
-from amox.env import LOG_LEVEL_ENV
 from amox.formatters import (
     ALL_EXCLUDE,
     DEFAULT_FIELD_REMAP,
@@ -79,8 +78,6 @@ class CreateFormatter(t.Protocol):
         self,
         log_format: Json,
         /,
-        *,
-        root: bool = False,
         **opts: t.Unpack[FormatterOptions],
     ) -> JsonFormatter: ...
 
@@ -89,8 +86,6 @@ class CreateFormatter(t.Protocol):
         self,
         log_format: Logfmt | None = None,
         /,
-        *,
-        root: bool = False,
         **opts: t.Unpack[FormatterOptions],
     ) -> LogfmtFormatter: ...
 
@@ -98,8 +93,6 @@ class CreateFormatter(t.Protocol):
         self,
         log_format: LogFormat | None = None,
         /,
-        *,
-        root: bool = False,
         **opts: t.Unpack[FormatterOptions],
     ) -> JsonFormatter | LogfmtFormatter:
         """Protocol for foratter factory."""
@@ -234,33 +227,27 @@ class TestCreateFormatter[T: AmoxFormatter]:
         assert isinstance(formatter, expected)
 
     @pytest.mark.parametrize(
-        ("root", "env", "expected"),
+        ("env", "expected"),
         [
-            (False, "INFO", logging.WARNING),
-            (True, "INFO", logging.INFO),
-            (True, "ERROR", logging.ERROR),
+            ("json", JsonFormatter),
+            ("logfmt", LogfmtFormatter),
         ],
         ids=[
-            "false_no_side_effect",
-            "true_sets_info",
-            "true_sets_error",
+            "json",
+            "logfmt",
         ],
     )
-    def test_root(
+    def test_format_env(
         self,
-        root: bool,
         env: str,
-        expected: int,
+        expected: type[AmoxFormatter],
         create_formatter: CreateFormatter,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """`root` controls whether `setLevel()` is called on the root logger."""
-        monkeypatch.setenv(LOG_LEVEL_ENV, env)
-        logging.root.setLevel(logging.WARNING)
-
-        _ = create_formatter("logfmt", root=root)
-
-        assert logging.root.level == expected
+        """Format resolved from AMOX_LOG_FORMAT env var."""
+        monkeypatch.setenv("AMOX_LOG_FORMAT", env)
+        formatter = create_formatter()
+        assert isinstance(formatter, expected)
 
 
 class AmoxFormatterTests:

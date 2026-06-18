@@ -12,15 +12,14 @@ from logging.handlers import QueueHandler
 import jsonschema
 import pytest
 
+import amox
 from amox.formatters import AmoxFormatter
+from amox.handlers import has_handler
 from amox.logging_ import (
     DEFAULT_EXISTING_LOGGER_LEVEL,
-    DEFAULT_QUEUE_HANDLER_NAME,
-    DEFAULT_STREAM_HANDLER_NAME,
     config,
     dict_config,
     get_logger,
-    has_handler,
     setup,
 )
 from amox.parsers import JsonParser, LogfmtParser, LogLineParser
@@ -74,12 +73,11 @@ class TestHasHandler:
     @pytest.mark.parametrize(
         ("handler_name", "expects"),
         [
-            (DEFAULT_QUEUE_HANDLER_NAME, True),
-            (DEFAULT_STREAM_HANDLER_NAME, True),
+            (amox.__name__, True),
             ("foreign", False),
             (None, False),
         ],
-        ids=["queue_handler", "stream_handler", "foreign", "unnamed"],
+        ids=["managed", "foreign", "unnamed"],
     )
     def test_on_root(
         self,
@@ -96,7 +94,7 @@ class TestHasHandler:
     @pytest.mark.parametrize(
         ("handler_name", "expects"),
         [
-            (DEFAULT_STREAM_HANDLER_NAME, True),
+            (amox.__name__, True),
             ("foreign", False),
             (None, False),
         ],
@@ -151,7 +149,7 @@ class TestGetLogger:
         """StreamHandler is named with the library prefix."""
         logger = get_logger(f"{SRC_LOGGER_PREFIX}.handler_name")
         (handler,) = logger.handlers
-        assert handler.name == DEFAULT_STREAM_HANDLER_NAME
+        assert handler.name == amox.__name__
 
     def test_default_handler(self) -> None:
         """Attaches a StreamHandler with an AmoxFormatter by default."""
@@ -188,13 +186,13 @@ class TestGetLogger:
         _ = get_logger(f"{SRC_LOGGER_PREFIX}.only")
         assert other.handlers == handlers
 
-    def test_handlers_untouched(self) -> None:
-        """Additional handlers have no formatter attached by amox."""
+    def test_handlers_formatter(self) -> None:
+        """Additional handlers have formatter attached by amox."""
         handler = logging.StreamHandler(io.StringIO())
         logger = get_logger(f"{SRC_LOGGER_PREFIX}.user", handlers=[handler])
 
         assert handler in logger.handlers
-        assert handler.formatter is None
+        assert isinstance(handler.formatter, AmoxFormatter)
 
     def test_multiple_handlers(self) -> None:
         """All user-provided handlers are added alongside the default handler."""
@@ -309,11 +307,10 @@ class TestGetLogger:
     @pytest.mark.parametrize(
         ("handler_name", "expects"),
         [
-            (DEFAULT_QUEUE_HANDLER_NAME, False),
-            (DEFAULT_STREAM_HANDLER_NAME, False),
+            (amox.__name__, False),
             ("foreign", True),
         ],
-        ids=["queue_handler", "stream_handler", "foreign_handler"],
+        ids=["managed_handler", "foreign_handler"],
     )
     def test_setup_early_exit(
         self,
@@ -392,7 +389,7 @@ class TestSetup:
         assert len(queue_handlers) == 1
 
     def test_queue_disabled(self) -> None:
-        """`setup(queue=False)` installs a direct StreamHandler, no queue."""
+        """queue=False installs a direct StreamHandler, no queue."""
         setup(queue=False)
 
         queue_handlers = [
@@ -436,20 +433,20 @@ class TestSetup:
         name: str,
         level: LogLevel,
     ) -> None:
-        """`setup(loggers=[{"module": ..., "level": "ERROR"}])` sets explicit level."""
+        """loggers=[{"module": ..., "level": "ERROR"}] sets explicit level."""
         setup(loggers=[{"module": reference, "level": level}])
 
         assert logging.getLogger(name).level == logging.getLevelNamesMapping()[level]
 
     def test_name_scopes(self) -> None:
-        """`setup(name=...)` sets named logger to DEBUG, root stays at WARNING."""
+        """name=... sets named logger to DEBUG, root stays at WARNING."""
         setup(name=SRC_LOGGER_PREFIX)
 
         assert logging.getLogger(SRC_LOGGER_PREFIX).level == logging.DEBUG
         assert logging.root.level == logging.WARNING
 
     def test_removes_get_logger_handlers(self) -> None:
-        """`setup()` removes handlers from `get_logger`-configured loggers."""
+        """Removes handlers from `get_logger`-configured loggers."""
         logger = get_logger(f"{SRC_LOGGER_PREFIX}.removal")
         assert has_handler(logger=logger)
 

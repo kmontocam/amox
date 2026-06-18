@@ -2,7 +2,13 @@
 
 import pytest
 
-from amox.env import LOG_FORMAT_ENV, LOG_LEVEL_ENV, resolve_format, resolve_level
+from amox.env import (
+    LOG_FORMAT_ENV,
+    LOG_LEVEL_ENV,
+    resolve_bool,
+    resolve_format,
+    resolve_level,
+)
 from amox.warnings_ import AmoxConfigWarning
 
 
@@ -129,6 +135,81 @@ class TestResolveLevel:
             monkeypatch.setenv(LOG_LEVEL_ENV, env)
 
         result = resolve_level()
+
+        assert result == expected
+
+        if warns:
+            assert len(recwarn) == 1
+            (warn,) = recwarn
+            assert warn.category is AmoxConfigWarning
+        else:
+            assert len(recwarn) == 0
+
+
+class TestResolveBool:
+    """Tests for `resolve_bool`: reads boolean env vars."""
+
+    @pytest.mark.parametrize(
+        ("env", "expected", "warns"),
+        [
+            (None, None, False),
+            ("1", True, False),
+            ("true", True, False),
+            ("True", True, False),
+            ("TRUE", True, False),
+            ("  true  ", True, False),
+            ("0", False, False),
+            ("false", False, False),
+            ("False", False, False),
+            ("FALSE", False, False),
+            ("  false  ", False, False),
+            ("yes", None, True),
+            ("no", None, True),
+            ("on", None, True),
+            ("off", None, True),
+            ("2", None, True),
+            ("", None, True),
+        ],
+        ids=[
+            "unset_none",
+            "truthy_1",
+            "truthy_true",
+            "truthy_True",
+            "truthy_TRUE",
+            "truthy_whitespace",
+            "falsy_0",
+            "falsy_false",
+            "falsy_False",
+            "falsy_FALSE",
+            "falsy_whitespace",
+            "invalid_yes",
+            "invalid_no",
+            "invalid_on",
+            "invalid_off",
+            "invalid_2",
+            "empty_string",
+        ],
+    )
+    def test_resolve_bool(
+        self,
+        env: str | None,
+        expected: bool | None,
+        warns: bool,
+        monkeypatch: pytest.MonkeyPatch,
+        recwarn: pytest.WarningsRecorder,
+    ) -> None:
+        """
+        Resolves boolean from environment variable.
+
+        Unset returns None. Invalid values emit `AmoxConfigWarning` and return None.
+        """
+        env_name = "TEST_BOOL_VAR"
+        if env is None:
+            monkeypatch.delenv(env_name, raising=False)
+        else:
+            monkeypatch.setenv(env_name, env)
+
+        result = resolve_bool(env_name)
 
         assert result == expected
 

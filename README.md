@@ -23,16 +23,19 @@ Single call, **every log record will obey the configured format**.
 
 On application's entrypoint:
 
-```src/main.py
-from amox import setup
+```src/package/main.py
+import amox
 
-setup(name=__name__)
+import package
+
+
+amox.setup(name=package.__name__)  # `package` as application's name
 ```
 
 Standard `logging.getLogger()` works transparently: all records are emitted on the
 configured format.
 
-```src/module/__init__.py
+```src/package/module/__init__.py
 import logging
 
 logger = logging.getLogger(__name__)
