@@ -10,7 +10,6 @@
     "amox": {
       "()": "amox.handlers.create_handler",
       "formatter": "amox",
-      "queue": true,
       "root": true
     }
   },
