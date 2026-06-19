@@ -12,7 +12,7 @@ import warnings
 
 import amox
 from amox.formatters import AmoxFormatter, create_formatter
-from amox.handlers import create_handler, has_handler
+from amox.handlers import LiveQueueHandler, create_handler, has_handler
 from amox.types_ import (
     ConfigOptions,
     DictConfig,
@@ -27,6 +27,11 @@ from amox.warnings_ import AmoxFormatWarning
 DEFAULT_EXISTING_LOGGER_LEVEL: LogLevel = "WARNING"
 """
 Default log level on setup when viewing logs of third party packages.
+"""
+
+DEFAULT_LOGGER_LEVEL: LogLevel = "DEBUG"
+"""
+Default log level for a managed logger.
 """
 
 log = logging.getLogger(amox.__name__)
@@ -53,9 +58,7 @@ def setup(**opts: t.Unpack[SetupOptions]) -> None:
     # the logging tree.
     for logger_name in logging.Logger.manager.loggerDict:
         logger = logging.getLogger(logger_name)
-        handlers = [
-            h for h in logger.handlers if h.name and h.name.startswith(amox.__name__)
-        ]
+        handlers = [h for h in logger.handlers if h.name and h.name == amox.__name__]
         if handlers:
             msg = f"dropping {logger_name=} formatter: overwritten by root's config."
             log.warning(msg)
@@ -117,7 +120,8 @@ def config(**opts: t.Unpack[ConfigOptions]) -> DictConfig:
 def get_logger(
     name: str | None = None,
     *,
-    level: LogLevel | int = logging.DEBUG,
+    queue: bool | None = None,
+    level: LogLevel | int | None = None,
     log_format: LogFormat | None = None,
     handlers: list[logging.Handler] | None = None,
     **opts: t.Unpack[FormatterOptions],
@@ -141,12 +145,7 @@ def get_logger(
 
     if configured_by_get_logger:
         # check against defaults
-        if (
-            log_format is not None
-            or opts
-            or handlers is not None
-            or level != logging.DEBUG
-        ):
+        if log_format is not None or queue or opts or handlers or level:
             warnings.warn(
                 f"options ignored on already configured logger {name!r}",
                 AmoxFormatWarning,
@@ -163,24 +162,32 @@ def get_logger(
         )
 
     formatter = create_formatter(log_format, **opts)
+    handlers = handlers or list[logging.Handler]()
+    level = level or DEFAULT_LOGGER_LEVEL
+
+    logger.setLevel(level)
+
+    for h in handlers:
+        h.formatter = formatter
 
     if configured_by_setup:
-        for h in handlers or list[logging.Handler]():
-            h.formatter = formatter
-            logger.addHandler(h)
-        logger.setLevel(level)
-        # early exit on stream handler because of setup
+        root = next(h for h in logging.root.handlers if h.name == amox.__name__)
+        if isinstance(root, LiveQueueHandler) and (listener := root.listener):
+            # append to queue handler to produce non blocking I/O regardless of the
+            # logger on the tree.
+            [h.addFilter(lambda log: log.name == name) for h in handlers]
+            listener.handlers = (*listener.handlers, *handlers)
+        else:
+            # prevent creation of amox handler, append given and early exit
+            [logger.addHandler(h) for h in handlers]
         return logger
 
-    # NOTE: disabled to prevent spawn of unsupervised count of threads on multiple
-    # calls to get_logger
-    handler = create_handler(queue=False, formatter=formatter)
+    handler = create_handler(queue=queue, formatter=formatter, handlers=handlers)
     logger.addHandler(handler)
 
-    for h in handlers or list[logging.Handler]():
-        h.formatter = formatter
-        logger.addHandler(h)
-    logger.setLevel(level)
+    if not isinstance(handler, LiveQueueHandler):
+        [logger.addHandler(h) for h in handlers]
+
     if name is not None:
         logger.propagate = False
 

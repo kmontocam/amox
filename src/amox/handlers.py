@@ -29,7 +29,7 @@ class LiveQueueHandler(QueueHandler):
         if name == "listener" and isinstance(value, QueueListener):
             value.start()
             _ = atexit.register(self.stop_listener)
-        # forward dictConfig assignment to the listener handlers for managed formatters
+        # forward assignment to the listener handlers for managed formatters
         elif (
             name == "formatter"
             and self.listener
@@ -75,6 +75,7 @@ def create_handler(
     *,
     queue: bool | None = None,
     formatter: logging.Formatter | None = None,
+    handlers: list[logging.Handler] | None = None,
     root: bool = False,
 ) -> logging.Handler:
     """
@@ -109,8 +110,10 @@ def create_handler(
         return stream
 
     q = Queue()
-    listener = QueueListener(q, stream, respect_handler_level=True)
+    handlers = handlers or list[logging.Handler]()
+    listener = QueueListener(q, stream, *handlers, respect_handler_level=True)
     lqh = LiveQueueHandler(q)
+    lqh.name = amox.__name__
     lqh.listener = listener
     return lqh
 
