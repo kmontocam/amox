@@ -502,10 +502,16 @@ class DictConfig(t.TypedDict, total=False):
 
 
 class LoggerLevelConfig(t.TypedDict, total=False):
-    """Per-logger level override ."""
+    """Per-logger level override."""
 
     module: t.Required[types.ModuleType | str]
+    """
+    Module name.
+    """
     level: t.Required[LogLevel | int]
+    """
+    Logging level.
+    """
 
 
 class FormatterOptions(t.TypedDict, total=False):
@@ -543,33 +549,32 @@ class ConfigOptions(FormatterOptions, total=False):
 
     name: str
     """
-    System logger namespace. All loggers on the tree are set to
-    `DEBUG` while root and packages stay at the configured level.
+    System logger namespace. Sets tree log level to `DEBUG` for the given name,
+    root and third party loggers stay at the configured level.
 
-    Typically a top-level package name (e.g. `__name__`).
+    Typically a top-level package name.
     """
 
     format: LogFormat
     """
-    Override the log format (`'logfmt'` or `'json'`). When omitted, reads from
-    `AMOX_LOG_FORMAT` env var, defaulting to `'logfmt'`.
+    Set the log format. When omitted, reads from `AMOX_LOG_FORMAT` environment
+    variable, defaults to `'logfmt'`.
     """
 
     level: LogLevel
     """
     Override the root logger level. When omitted, reads from `AMOX_LOG_LEVEL`
-    env var, defaulting to `'WARNING'`.
+    environment variable, defaults to `'WARNING'`.
     """
 
     loggers: list[types.ModuleType | str | LoggerLevelConfig]
     """
     List of third-party modules or logger names to cap at a specific level. Strings and
-    modules default to `WARNING`. Dicts with `{"module": ..., "level": ...}` set an
-    explicit level.
+    modules default to `WARNING`.
     """
 
     queue: bool
     """
-    Whether to wrap the handler in a `QueueHandler` for non-blocking I/O. When omitted,
-    reads from `AMOX_QUEUE` env var, defaulting to `True`.
+    Whether to wrap the handler in a `logging.handlers.QueueHandler` for non-blocking
+    I/O. When omitted, reads from `AMOX_QUEUE` env var, defaults to `True`.
     """

@@ -82,10 +82,16 @@ def create_handler(
     Create handler based on configuration.
 
     Resolve the type and return the corresponding handler instance. Options include
-    a raw `StreamHandler` with `sys.stderr` stream, or the same wrapped inside a
-    `QueueHandler` for non blocking I/O.
+    a raw `logging.StreamHandler` with `sys.stderr` stream, or the same wrapped inside a
+    `logging.handlers.QueueHandler` for non blocking I/O.
 
-    Used mainly as the factory for `dictConfig`'s `()` protocol.
+    Args:
+        queue: wrap default handler and `handlers` inside a
+            `logging.handlers.QueueHandler`.
+        formatter: `logging.Formatter` instance to apply to **all handlers*+.
+        handlers: additional handlers to append into the `logging.handler.QueueHandler`.
+            If configuration does not resolve to a queue based, these are ignored.
+        root: resolve and assign level to root handler.
 
     Note:
         When `root` is True, `setLevel()` is called on the root logger during

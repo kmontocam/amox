@@ -42,9 +42,21 @@ Library logger for internal messages.
 
 def setup(**opts: t.Unpack[SetupOptions]) -> None:
     """
-    Configure root logger with schema based formatter.
+    Apply configuration on root logger using a `logging.StreamHandler`.
 
-    All loggers in the process apply configuration and emit semi-structured output.
+    Defines `stderr` as the preferred stream for logging output, designed so **all
+    loggers** in the process adhere to convention and emit semi-structured output.
+    Intended to be used on program's entrypoint before the instantiation of any logger.
+
+    Note:
+        Beware the order in which modules are loaded, existing loggers created via
+        `get_logger` before call will mutate in-place and delegate configuration to
+        the root logger.
+
+    Reference:
+        `https://docs.python.org/3/howto/logging.html#configuring-logging-for-a-library`
+        `https://pubs.opengroup.org/onlinepubs/9699919799/functions/stderr.html`
+
     """
     # early exit if no modifications and root handler already modified
     if not opts and has_handler():
@@ -127,16 +139,33 @@ def get_logger(
     **opts: t.Unpack[FormatterOptions],
 ) -> logging.Logger:
     """
-    Return a logger with structured formatting attached.
+    Return logger with a `stderr` `logging.Streamhandler` with structured format.
+
+    Args:
+        name: proxy for `logging`'s `getLogger()` name parameter.
+        queue: wrap all logger handlers inside a `logging.handlers.QueueHandler`
+            for non-blocking I/O. When omitted, reads from `AMOX_QUEUE`
+            environment variable, defaults to `True`.
+        level: proxy for `logging.Logger`'s bound `setLevel()` level parameter.
+            Defaults to `'DEBUG'`.
+        log_format: schema on read format. When omitted, reads from
+            `AMOX_LOG_FORMAT` environment variable, defaults to `'logfmt'`.
+        handlers: additional handlers to append into the logger besides the base
+            `logging.StreamHandler`.
 
     Note:
         Calls with the same name returns the existing logger without duplicating
         handlers. Formatting options on repeat calls or when `setup()` is active are
-        ignored with an `AmoxFormatWarning`.
+        ignored.
 
-        When neither `setup()` nor a prior call configured the logger, a StreamHandler
-        with an AmoxFormatter is attached and propagation is disabled to prevent double
-        output.
+        Usage can be independent to `setup()` with standalone calls, as it also works
+        on initialized environments. Non configured processes via `setup()` with queue
+        handlers enabled **will spawn a thread for every logger created**, which may
+        lead to unexpected compute usage.
+
+    Reference:
+        `https://docs.python.org/3/howto/logging.html#configuring-logging-for-a-library`
+        `https://pubs.opengroup.org/onlinepubs/9699919799/functions/stderr.html`
 
     """
     logger = logging.getLogger(name)
