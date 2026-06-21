@@ -61,7 +61,7 @@ class LiveQueueHandler(QueueHandler):
         (which holds frame references and is unpicklable).
 
         Reference:
-            `https://github.com/python/cpython/issues/107801`
+            `https://github.com/python/cpython/issues/89087`
         """
         if record.exc_info:
             record.exc_text = "".join(
