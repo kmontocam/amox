@@ -56,7 +56,7 @@ class ScriptResult:
 
     @property
     def lines(self) -> list[str]:
-        """Output lines from `stderr`: filescriptor with logging's destination."""
+        """Output lines from `stderr`: stream with logger's handler destination."""
         return [line for line in self.stderr.splitlines() if line]
 
 
