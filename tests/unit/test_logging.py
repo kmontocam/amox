@@ -1,20 +1,23 @@
 """Unit tests for `src.amox.logging_` module."""
 
-import io
 import json
 import logging
 import logging.config
+import logging.handlers
 import pathlib
+import sys
+import threading
+import time
 import types
 import typing as t
-from logging.handlers import QueueHandler
+from collections import abc
 
 import jsonschema
 import pytest
 
 import amox
 from amox.formatters import AmoxFormatter
-from amox.handlers import has_handler
+from amox.handlers import LiveQueueHandler, has_handler
 from amox.logging_ import (
     DEFAULT_EXISTING_LOGGER_LEVEL,
     config,
@@ -22,20 +25,34 @@ from amox.logging_ import (
     get_logger,
     setup,
 )
-from amox.parsers import JsonParser, LogfmtParser, LogLineParser
 from amox.types_ import FormatterOptions, LogFormat, LogLevel
 from amox.warnings_ import AmoxFormatWarning
+from tests.conftest import make_record
+
+
+class SupportsFilter(t.Protocol):
+    """Protocol for filterer as a type."""
+
+    def filter(self, record: logging.LogRecord, /) -> bool | logging.LogRecord:
+        """Filter."""
+
+
+type FilterCallable = abc.Callable[[logging.LogRecord], bool | logging.LogRecord]
+"""
+Filter as callable.
+"""
 
 SRC_LOGGER_PREFIX = "src"
 THIRD_PARTY_LOGGER = "thirdparty"
 
 
 class GetLoggerKwargs(FormatterOptions, total=False):
-    """Keyword arguments for `get_logger()` in parametrized tests."""
+    """Keyword arguments for `get_logger()`."""
 
     level: LogLevel | int
     log_format: LogFormat | None
     handlers: list[logging.Handler]
+    queue: bool
 
 
 class TestConfig:
@@ -85,7 +102,7 @@ class TestHasHandler:
         expects: bool,
     ) -> None:
         """Detects amox-named handlers on root logger."""
-        handler = logging.StreamHandler()
+        handler = logging.Handler()
         handler.name = handler_name
         logging.root.addHandler(handler)
 
@@ -107,7 +124,7 @@ class TestHasHandler:
     ) -> None:
         """Detects amox-named handlers on a named logger."""
         logger = logging.getLogger(f"{SRC_LOGGER_PREFIX}.has_handler")
-        handler = logging.StreamHandler()
+        handler = logging.Handler()
         handler.name = handler_name
         logger.addHandler(handler)
 
@@ -151,12 +168,27 @@ class TestGetLogger:
         (handler,) = logger.handlers
         assert handler.name == amox.__name__
 
-    def test_default_handler(self) -> None:
-        """Attaches a StreamHandler with an AmoxFormatter by default."""
-        logger = get_logger(f"{SRC_LOGGER_PREFIX}.handler")
+    @pytest.mark.parametrize(
+        ("queue", "expected"),
+        [
+            (True, LiveQueueHandler),
+            (False, logging.StreamHandler),
+        ],
+        ids=["queue", "stream"],
+    )
+    def test_default_handler(
+        self,
+        queue: bool,
+        expected: type[logging.Handler],
+    ) -> None:
+        """Attaches handler with an AmoxFormatter by default."""
+        logger = get_logger(f"{SRC_LOGGER_PREFIX}.handler", queue=queue)
         assert len(logger.handlers) == 1
         (handler,) = logger.handlers
-        assert isinstance(handler, logging.StreamHandler)
+        assert isinstance(handler, expected)
+        if isinstance(handler, LiveQueueHandler) and (listener := handler.listener):
+            assert len(listener.handlers) == 1
+            (handler,) = listener.handlers
         assert isinstance(handler.formatter, AmoxFormatter)
 
     @pytest.mark.parametrize(
@@ -186,27 +218,31 @@ class TestGetLogger:
         _ = get_logger(f"{SRC_LOGGER_PREFIX}.only")
         assert other.handlers == handlers
 
-    def test_handlers_formatter(self) -> None:
-        """Additional handlers have formatter attached by amox."""
-        handler = logging.StreamHandler(io.StringIO())
-        logger = get_logger(f"{SRC_LOGGER_PREFIX}.user", handlers=[handler])
+    @pytest.mark.parametrize(
+        ("queue", "expected"),
+        [
+            (True, 1),
+            (False, 2),
+        ],
+        ids=["queue", "stream"],
+    )
+    def test_handlers(
+        self,
+        queue: bool,
+        expected: int,
+    ) -> None:
+        """Additional handlers are included and have formatter attached by amox."""
+        stream = logging.StreamHandler(sys.stderr)
+        logger = get_logger(f"{SRC_LOGGER_PREFIX}.user", queue=queue, handlers=[stream])
+        assert len(logger.handlers) == expected
+        (handler, *_) = logger.handlers
+        container: logging.Logger | logging.handlers.QueueListener = logger
+        if isinstance(handler, LiveQueueHandler) and (listener := handler.listener):
+            *_, stream = listener.handlers
+            container = listener
 
-        assert handler in logger.handlers
-        assert isinstance(handler.formatter, AmoxFormatter)
-
-    def test_multiple_handlers(self) -> None:
-        """All user-provided handlers are added alongside the default handler."""
-        h1 = logging.StreamHandler(io.StringIO())
-        h2 = logging.StreamHandler(io.StringIO())
-        handlers: list[logging.Handler] = [h1, h2]
-        logger = get_logger(f"{SRC_LOGGER_PREFIX}.multi", handlers=handlers)
-
-        assert len(logger.handlers) == len(handlers) + 1
-        assert h1 in logger.handlers
-        assert h2 in logger.handlers
-
-        handler, *_ = logger.handlers
-        assert isinstance(handler.formatter, AmoxFormatter)
+        assert stream in container.handlers
+        assert isinstance(stream.formatter, AmoxFormatter)
 
     def test_idempotent(self) -> None:
         """Calling twice with the same name does not duplicate handlers."""
@@ -220,12 +256,13 @@ class TestGetLogger:
     @pytest.mark.parametrize(
         ("kwargs", "expects"),
         [
-            ({"log_format": "json"}, True),
-            ({"snake_case": False}, True),
-            ({"level": "WARNING"}, True),
-            ({"handlers": []}, True),
+            (GetLoggerKwargs(log_format="json"), True),
+            (GetLoggerKwargs(snake_case=True), True),
+            (GetLoggerKwargs(level="WARNING"), True),
+            (GetLoggerKwargs(handlers=[]), False),
+            (GetLoggerKwargs(queue=True), True),
         ],
-        ids=["format", "opts", "level", "handlers"],
+        ids=["format", "opts", "level", "handlers", "queue"],
     )
     def test_configured_warning(
         self,
@@ -251,12 +288,12 @@ class TestGetLogger:
     @pytest.mark.parametrize(
         ("kwargs", "expects"),
         [
-            ({"log_format": "json"}, True),
-            ({"level": "WARNING"}, False),
+            (GetLoggerKwargs(log_format="json"), True),
+            (GetLoggerKwargs(level="WARNING"), False),
         ],
         ids=["format", "level"],
     )
-    def test_setup_active_warning(
+    def test_setup_warning(
         self,
         kwargs: GetLoggerKwargs,
         expects: bool,
@@ -271,38 +308,6 @@ class TestGetLogger:
             assert warn.category is AmoxFormatWarning
         else:
             assert not recwarn.list
-
-    @pytest.mark.parametrize(
-        ("log_format", "parser"),
-        [
-            ("logfmt", LogfmtParser()),
-            ("json", JsonParser()),
-        ],
-        ids=["logfmt", "json"],
-    )
-    def test_parseable(
-        self,
-        log_format: LogFormat,
-        parser: LogLineParser,
-    ) -> None:
-        """The logger produces parseable structured output for each format."""
-        logger = get_logger(
-            f"{SRC_LOGGER_PREFIX}.output.{log_format}",
-            log_format=log_format,
-        )
-
-        stream = io.StringIO()
-        (handler,) = logger.handlers
-        handler = t.cast("logging.StreamHandler[io.StringIO]", handler)
-        handler.stream = stream
-
-        message = "message"
-        level = logging.INFO
-
-        logger.log(level, message)
-        parsed = parser.parse_line(stream.getvalue().strip())
-        assert parsed["msg"] == message
-        assert parsed["level"] == logging.getLevelName(level)
 
     @pytest.mark.parametrize(
         ("handler_name", "expects"),
@@ -329,26 +334,159 @@ class TestGetLogger:
 
         assert bool(logger.handlers) == expects
 
-    def test_setup_active_no_handler(self) -> None:
-        """After `setup()`, `get_logger()` adds no handler on the named logger."""
-        setup(name=f"{SRC_LOGGER_PREFIX}.setup_active")
-        logger = get_logger(f"{SRC_LOGGER_PREFIX}.setup_active.no_handler")
-        assert not logger.handlers
-
-    def test_setup_active_level(self) -> None:
+    def test_setup_level(self) -> None:
         """After `setup()`, `get_logger()` still sets the level."""
         setup()
         logger = get_logger(f"{SRC_LOGGER_PREFIX}.setup_active.level", level="WARNING")
         assert logger.level == logging.WARNING
 
-    def test_setup_active_handlers(self) -> None:
-        """After `setup()`, user-provided handlers are still added."""
-        setup()
-        handler = logging.StreamHandler(io.StringIO())
-        logger = get_logger(
-            f"{SRC_LOGGER_PREFIX}.setup_active.handlers", handlers=[handler]
-        )
-        assert handler in logger.handlers
+    def test_setup_no_handler(self) -> None:
+        """After `setup()`, `get_logger()` adds no handler on the named logger."""
+        setup(name=f"{SRC_LOGGER_PREFIX}.setup_active")
+        logger = get_logger(f"{SRC_LOGGER_PREFIX}.setup_active.no_handler")
+        assert not logger.handlers
+
+    @pytest.mark.parametrize(
+        ("queue"),
+        [True, False],
+        ids=["queue", "stream"],
+    )
+    def test_setup_handler(
+        self,
+        queue: bool,
+    ) -> None:
+        """After `setup(queue=)`, user-provided handlers are added."""
+        setup(queue=queue)
+        h = logging.Handler()
+        name = f"{SRC_LOGGER_PREFIX}.setup_active.handlers"
+        logger = get_logger(name, handlers=[h])
+
+        # on queue: giving handlers are expected to escalate all the way to the root's
+        # queue to produce non-blocking I/O, with a filterer with name.
+        if queue and (
+            (handler := logging.root.handlers[0])
+            and isinstance(handler, LiveQueueHandler)
+            and (listener := handler.listener)
+        ):
+            assert h in listener.handlers
+            assert h.filters
+            assert isinstance(h.formatter, AmoxFormatter)
+
+        else:
+            assert h in logger.handlers
+
+    def test_setup_handler_placement(self) -> None:
+        """After setup(queue=True), extra handler is in listener, not in logger."""
+        setup(queue=True)
+        h = logging.Handler()
+        name = f"{SRC_LOGGER_PREFIX}.placement"
+        logger = get_logger(name, handlers=[h])
+
+        assert h not in logger.handlers
+        (handler,) = logging.root.handlers
+        assert isinstance(handler, LiveQueueHandler)
+        listener = handler.listener
+        assert listener is not None
+        assert h in listener.handlers
+
+    def test_setup_handler_filter(self) -> None:
+        """After setup(queue=True), extra handler filter only passes matching name."""
+        setup(queue=True)
+        h = logging.Handler()
+        name = f"{SRC_LOGGER_PREFIX}.filter_test"
+        # handler propagates to root's queue and filter by name.
+        _ = get_logger(name, handlers=[h])
+
+        assert len(h.filters) == 1
+        (filterer,) = h.filters
+
+        matching = make_record(name=name)
+        other = make_record(name="other.logger")
+
+        assert self.is_filter_callable(filterer)
+
+        assert filterer(matching) is True
+        assert filterer(other) is False
+
+    def test_setup_handler_queue_emission(self) -> None:
+        """After setup(queue=True), additional handlers records flow through queue."""
+        setup(queue=True)
+        thread: threading.Thread | None = None
+        event = threading.Event()
+
+        class RecordingHandler(logging.Handler):
+            """Capture thread activity inside handler."""
+
+            @t.override
+            def emit(self, record: logging.LogRecord) -> None:
+                nonlocal thread
+                thread = threading.current_thread()
+                event.set()
+
+        h = RecordingHandler()
+        name = f"{SRC_LOGGER_PREFIX}.emission"
+        logger = get_logger(name, handlers=[h])
+
+        main_thread = threading.current_thread()
+
+        self.drop_root_default_stream()
+
+        logger.info("test message")
+
+        assert event.wait(timeout=2.0)
+        assert thread != main_thread
+
+    def test_setup_handler_queue_nonblocking(self) -> None:
+        """After setup(queue=True), handlers do not block I/O."""
+        setup(queue=True)
+        records: list[logging.LogRecord] = []
+        event = threading.Event()
+        throttle = 0.04
+        n = 4
+
+        class BlockingHandler(logging.Handler):
+            """Blocking I/O handler."""
+
+            @t.override
+            def emit(self, record: logging.LogRecord) -> None:
+                time.sleep(throttle)
+                records.append(record)
+                if len(records) == n:
+                    event.set()
+
+        h = BlockingHandler()
+        name = f"{SRC_LOGGER_PREFIX}.nonblocking"
+        logger = get_logger(name, handlers=[h])
+
+        self.drop_root_default_stream()
+
+        # handler takes (n * throttle) to emit all records, yet logging
+        # must not block I/O
+        for i in range(n):
+            message = f"tick: {i}"
+            logger.info(message)
+
+        # blocking handler has not managed to emit any record
+        assert len(records) == 0
+        assert event.wait(timeout=n + 1 * throttle)
+        assert len(records) == n
+
+    def is_filter_callable(
+        self, obj: logging.Filter | FilterCallable | SupportsFilter
+    ) -> t.TypeGuard[FilterCallable]:
+        """Guard lambda filter used in `get_logger()` for additional handlers."""
+        return callable(obj)
+
+    def drop_root_default_stream(self) -> logging.handlers.QueueListener:
+        """Remove the default stream handler from the root queue listener."""
+        assert len(logging.root.handlers) == 1
+        (handler,) = logging.root.handlers
+        assert isinstance(handler, LiveQueueHandler)
+        listener = handler.listener
+        assert listener is not None
+        handlers = [lh for lh in listener.handlers if lh.name != amox.__name__]
+        listener.handlers = tuple(handlers)
+        return listener
 
     def teardown_method(self) -> None:
         """Clean up any loggers we created."""
@@ -379,24 +517,23 @@ class TestSetup:
 
         assert len(logging.root.handlers) == count
 
-    def test_queue_handler_default(self) -> None:
+    def test_handler_default(self) -> None:
         """By default, `setup()` installs a `LiveQueueHandler` on root."""
         setup()
 
-        queue_handlers = [
-            h for h in logging.root.handlers if isinstance(h, QueueHandler)
-        ]
-        assert len(queue_handlers) == 1
+        handlers = logging.root.handlers
+        assert len(handlers) == 1
+        (handler,) = handlers
+        assert isinstance(handler, LiveQueueHandler)
 
     def test_queue_disabled(self) -> None:
         """queue=False installs a direct StreamHandler, no queue."""
         setup(queue=False)
 
-        queue_handlers = [
-            h for h in logging.root.handlers if isinstance(h, QueueHandler)
-        ]
-        assert len(queue_handlers) == 0
-        assert len(logging.root.handlers) > 0
+        handlers = logging.root.handlers
+        assert len(handlers) == 1
+        (handler,) = handlers
+        assert isinstance(handler, logging.StreamHandler)
 
     @pytest.mark.parametrize(
         ("reference", "name"),

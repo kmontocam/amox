@@ -9,7 +9,7 @@ import pytest
 from uvicorn.config import LOGGING_CONFIG
 
 from amox.env import LOG_FORMAT_ENV, LOG_LEVEL_ENV
-from amox.parsers import JsonParser, LogfmtParser, LogLineParser
+from amox.parsers import LogLineParser
 from amox.types_ import LogFormat
 from tests.integration.scripts import uvicorn_access, uvicorn_cli, uvicorn_log_config
 
@@ -54,14 +54,8 @@ Reference:
 class TestUvicorn:
     """Tests for uvicorn producing structured output via `log_config=config()`."""
 
-    @pytest.mark.parametrize(
-        ("log_format", "parser"),
-        [
-            ("logfmt", LogfmtParser()),
-            ("json", JsonParser()),
-        ],
-        ids=["logfmt", "json"],
-    )
+    pytestmark = pytest.mark.integration
+
     def test_log_config(
         self,
         log_format: LogFormat,
@@ -90,14 +84,6 @@ class TestUvicorn:
             assert parsed["level"] == "INFO"
             assert parsed["logger"] in UVICORN_LOGGERS
 
-    @pytest.mark.parametrize(
-        ("log_format", "parser"),
-        [
-            ("logfmt", LogfmtParser()),
-            ("json", JsonParser()),
-        ],
-        ids=["logfmt", "json"],
-    )
     def test_cli(
         self,
         log_format: LogFormat,
@@ -124,14 +110,6 @@ class TestUvicorn:
             assert parsed["level"] == "INFO"
             assert parsed["logger"] in UVICORN_LOGGERS
 
-    @pytest.mark.parametrize(
-        ("log_format", "parser"),
-        [
-            ("logfmt", LogfmtParser()),
-            ("json", JsonParser()),
-        ],
-        ids=["logfmt", "json"],
-    )
     def test_access(
         self,
         log_format: LogFormat,

@@ -9,7 +9,7 @@ import pytest
 
 from amox.env import LOG_FORMAT_ENV, LOG_LEVEL_ENV
 from amox.logging_ import log
-from amox.parsers import JsonParser, LogfmtParser, LogLineParser
+from amox.parsers import LogLineParser
 from amox.types_ import LogFormat
 from tests.functional import (
     ParsabilityScript,
@@ -29,15 +29,6 @@ class TestSetup(ParsabilityTests):
     def parsability_script(self) -> ParsabilityScript:
         return parsability_script
 
-    @pytest.mark.functional
-    @pytest.mark.parametrize(
-        ("log_format", "parser"),
-        [
-            ("logfmt", LogfmtParser()),
-            ("json", JsonParser()),
-        ],
-        ids=["logfmt", "json"],
-    )
     def test_name_scope(
         self,
         log_format: LogFormat,
@@ -67,15 +58,6 @@ class TestSetup(ParsabilityTests):
             assert parsed["level"] == logging.getLevelName(level)
             assert parsed["logger"] == logger
 
-    @pytest.mark.functional
-    @pytest.mark.parametrize(
-        ("log_format", "parser"),
-        [
-            ("logfmt", LogfmtParser()),
-            ("json", JsonParser()),
-        ],
-        ids=["logfmt", "json"],
-    )
     @pytest.mark.parametrize(
         ("level", "expected"),
         [
@@ -115,15 +97,6 @@ class TestSetup(ParsabilityTests):
             assert parsed["logger"] == setup_level_scope.NAME
             assert parsed["ts"] is not None
 
-    @pytest.mark.functional
-    @pytest.mark.parametrize(
-        ("log_format", "parser"),
-        [
-            ("logfmt", LogfmtParser()),
-            ("json", JsonParser()),
-        ],
-        ids=["logfmt", "json"],
-    )
     def test_deferred_log_duplication(
         self,
         log_format: LogFormat,
@@ -144,15 +117,6 @@ class TestSetup(ParsabilityTests):
         ]
         assert len(msg_lines) == 1
 
-    @pytest.mark.functional
-    @pytest.mark.parametrize(
-        ("log_format", "parser"),
-        [
-            ("logfmt", LogfmtParser()),
-            ("json", JsonParser()),
-        ],
-        ids=["logfmt", "json"],
-    )
     def test_deferred_logs_warning(
         self,
         log_format: LogFormat,

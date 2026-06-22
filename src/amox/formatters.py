@@ -357,7 +357,6 @@ def create_formatter(
     Create a formatter from a format identifier string.
 
     Resolve the log format and return the corresponding formatter instance.
-    Used mainly as the factory for `dictConfig`'s `()` protocol.
     """
     log_format = log_format or resolve_format()
     tz = opts.get("tz")

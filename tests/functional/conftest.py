@@ -10,7 +10,7 @@ import typing as t
 import pytest
 
 from amox.env import LOG_FORMAT_ENV, LOG_LEVEL_ENV
-from amox.parsers import JsonParser, LogfmtParser, LogLineParser
+from amox.parsers import LogLineParser
 from amox.types_ import LogFormat
 
 SCRIPTS = pathlib.Path(__file__).parent / "scripts"
@@ -56,8 +56,27 @@ class ScriptResult:
 
     @property
     def lines(self) -> list[str]:
-        """Output lines from `stderr`: filescriptor with logging's destination."""
+        """Output lines from `stderr`: stream with logger's handler destination."""
         return [line for line in self.stderr.splitlines() if line]
+
+
+@pytest.fixture
+def script_runner() -> ScriptRunner:
+    """Subprocess runner for standalone script files."""
+
+    def runner(name: str, *, env: dict[str, str] | None = None) -> ScriptResult:
+        script = SCRIPTS / name
+        completed = subprocess.run(  # noqa: S603
+            [sys.executable, str(script)],
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=8,
+            check=True,
+        )
+        return ScriptResult(completed)
+
+    return runner
 
 
 class ParsabilityTests:
@@ -68,20 +87,13 @@ class ParsabilityTests:
     a `parsability_script` fixture for the specific entry point under test.
     """
 
+    pytestmark = pytest.mark.functional
+
     @pytest.fixture
     def parsability_script(self) -> ParsabilityScript:
         """Script (module) that produces logs."""
         raise NotImplementedError
 
-    @pytest.mark.functional
-    @pytest.mark.parametrize(
-        ("log_format", "parser"),
-        [
-            ("logfmt", LogfmtParser()),
-            ("json", JsonParser()),
-        ],
-        ids=["logfmt", "json"],
-    )
     def test_parsability(
         self,
         parsability_script: ParsabilityScript,
@@ -104,22 +116,3 @@ class ParsabilityTests:
         assert parsed["level"] == logging.getLevelName(parsability_script.LEVEL)
         assert parsed["logger"] == parsability_script.NAME
         assert parsed["ts"] is not None
-
-
-@pytest.fixture
-def script_runner() -> ScriptRunner:
-    """Subprocess runner for standalone script files."""
-
-    def runner(name: str, *, env: dict[str, str] | None = None) -> ScriptResult:
-        script = SCRIPTS / name
-        completed = subprocess.run(  # noqa: S603
-            [sys.executable, str(script)],
-            capture_output=True,
-            text=True,
-            env=env,
-            timeout=8,
-            check=True,
-        )
-        return ScriptResult(completed)
-
-    return runner

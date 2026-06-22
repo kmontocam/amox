@@ -5,6 +5,7 @@ import logging
 import sys
 import traceback
 import typing as t
+from collections import abc
 from logging.handlers import QueueHandler, QueueListener
 from queue import Queue
 
@@ -29,7 +30,7 @@ class LiveQueueHandler(QueueHandler):
         if name == "listener" and isinstance(value, QueueListener):
             value.start()
             _ = atexit.register(self.stop_listener)
-        # forward dictConfig assignment to the listener handlers for managed formatters
+        # forward assignment to the listener handlers for managed formatters
         elif (
             name == "formatter"
             and self.listener
@@ -61,7 +62,7 @@ class LiveQueueHandler(QueueHandler):
         (which holds frame references and is unpicklable).
 
         Reference:
-            `https://github.com/python/cpython/issues/107801`
+            `https://github.com/python/cpython/issues/89087`
         """
         if record.exc_info:
             record.exc_text = "".join(
@@ -71,20 +72,57 @@ class LiveQueueHandler(QueueHandler):
         return record
 
 
+@t.overload
+def create_handler(
+    *,
+    queue: t.Literal[True],
+    formatter: logging.Formatter | None = None,
+    handlers: abc.Sequence[logging.Handler] | None = None,
+    root: bool = False,
+) -> LiveQueueHandler: ...
+
+
+@t.overload
+def create_handler(
+    *,
+    queue: t.Literal[False],
+    formatter: logging.Formatter | None = None,
+    handlers: abc.Sequence[logging.Handler] | None = None,
+    root: bool = False,
+) -> logging.StreamHandler[t.TextIO]: ...
+
+
+@t.overload
 def create_handler(
     *,
     queue: bool | None = None,
     formatter: logging.Formatter | None = None,
+    handlers: abc.Sequence[logging.Handler] | None = None,
     root: bool = False,
-) -> logging.Handler:
+) -> logging.StreamHandler[t.TextIO] | LiveQueueHandler: ...
+
+
+def create_handler(
+    *,
+    queue: bool | None = None,
+    formatter: logging.Formatter | None = None,
+    handlers: abc.Sequence[logging.Handler] | None = None,
+    root: bool = False,
+) -> logging.StreamHandler[t.TextIO] | LiveQueueHandler:
     """
     Create handler based on configuration.
 
     Resolve the type and return the corresponding handler instance. Options include
-    a raw `StreamHandler` with `sys.stderr` stream, or the same wrapped inside a
-    `QueueHandler` for non blocking I/O.
+    a raw `logging.StreamHandler` with `sys.stderr` stream, or the same wrapped inside a
+    `logging.handlers.QueueHandler` for non blocking I/O.
 
-    Used mainly as the factory for `dictConfig`'s `()` protocol.
+    Args:
+        queue: wrap default handler and `handlers` inside a
+            `logging.handlers.QueueHandler`.
+        formatter: `logging.Formatter` instance to apply to **all handlers*+.
+        handlers: additional handlers to append into the `logging.handler.QueueHandler`.
+            If configuration does not resolve to a queue based, these are ignored.
+        root: resolve and assign level to root handler.
 
     Note:
         When `root` is True, `setLevel()` is called on the root logger during
@@ -109,8 +147,11 @@ def create_handler(
         return stream
 
     q = Queue()
-    listener = QueueListener(q, stream, respect_handler_level=True)
+    handlers = handlers or list[logging.Handler]()
+    [h.setFormatter(formatter) for h in handlers]
+    listener = QueueListener(q, stream, *handlers, respect_handler_level=True)
     lqh = LiveQueueHandler(q)
+    lqh.name = amox.__name__
     lqh.listener = listener
     return lqh
 
