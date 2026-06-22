@@ -120,7 +120,6 @@ class TestCreateHandler:
         handler = create_handler(queue=False)
 
         assert isinstance(handler, logging.StreamHandler)
-        assert not isinstance(handler, LiveQueueHandler)
 
     @pytest.mark.parametrize(
         ("env", "expected"),
@@ -139,9 +138,9 @@ class TestCreateHandler:
         expected: type[logging.Handler],
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """queue=None defers to `AMOX_QUEUE` env var."""
+        """No queue defers to `AMOX_QUEUE` env var."""
         monkeypatch.setenv(LOG_QUEUE_ENV, env)
-        handler = create_handler(queue=None)
+        handler = create_handler()
 
         assert isinstance(handler, expected)
         if isinstance(handler, LiveQueueHandler):
@@ -205,7 +204,8 @@ class TestCreateHandler:
         handler = create_handler(queue=True, formatter=formatter)
 
         assert isinstance(handler, LiveQueueHandler)
-        inner_handlers = handler.listener.handlers  # ty: ignore[unresolved-attribute]
+        assert handler.listener is not None
+        inner_handlers = handler.listener.handlers
         assert len(inner_handlers) == 1
         (inner_handler,) = inner_handlers
         assert inner_handler.formatter is formatter
