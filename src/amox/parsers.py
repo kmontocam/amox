@@ -48,7 +48,7 @@ class LogfmtParser:
         IVALUE = enum.auto()
         QVALUE = enum.auto()
 
-    def parse_line(self, line: str) -> dict[str, str | None]:  # noqa: C901, PLR0912, PLR0915
+    def parse_line(self, line: str) -> dict[str, object]:  # noqa: C901, PLR0912, PLR0915
         r"""
         Parse a single logfmt line into a dictionary.
 
@@ -59,7 +59,7 @@ class LogfmtParser:
         - key=value            -> "value"
         - key="quoted \\"val"  -> 'quoted "val'
         """
-        result: dict[str, str | None] = {}
+        result: dict[str, object] = {}
         state = self.State.GARBAGE
         key = ""
         value_chars: list[str] = []
