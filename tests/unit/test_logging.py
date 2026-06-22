@@ -7,6 +7,8 @@ import logging.handlers
 import pathlib
 import sys
 import types
+import typing as t
+from collections import abc
 
 import jsonschema
 import pytest
@@ -23,6 +25,20 @@ from amox.logging_ import (
 )
 from amox.types_ import FormatterOptions, LogFormat, LogLevel
 from amox.warnings_ import AmoxFormatWarning
+from tests.conftest import make_record
+
+
+class SupportsFilter(t.Protocol):
+    """Protocol for filterer as a type."""
+
+    def filter(self, record: logging.LogRecord, /) -> bool | logging.LogRecord:
+        """Filter."""
+
+
+type FilterCallable = abc.Callable[[logging.LogRecord], bool | logging.LogRecord]
+"""
+Filter as callable.
+"""
 
 SRC_LOGGER_PREFIX = "src"
 THIRD_PARTY_LOGGER = "thirdparty"
@@ -120,6 +136,12 @@ class TestHasHandler:
 
 class TestGetLogger:
     """Tests for `get_logger()`: named logger creation inline."""
+
+    def is_filter_callable(
+        self, obj: logging.Filter | FilterCallable | SupportsFilter
+    ) -> t.TypeGuard[FilterCallable]:
+        """Guard lambda filter used in `get_logger()` for additional handlers."""
+        return callable(obj)
 
     @pytest.mark.parametrize(
         ("name", "expected"),
@@ -356,6 +378,39 @@ class TestGetLogger:
 
         else:
             assert h in logger.handlers
+
+    def test_setup_handler_placement(self) -> None:
+        """After setup(queue=True), extra handler is in listener, not in logger."""
+        setup(queue=True)
+        h = logging.Handler()
+        name = f"{SRC_LOGGER_PREFIX}.placement"
+        logger = get_logger(name, handlers=[h])
+
+        assert h not in logger.handlers
+        (handler,) = logging.root.handlers
+        assert isinstance(handler, LiveQueueHandler)
+        listener = handler.listener
+        assert listener is not None
+        assert h in listener.handlers
+
+    def test_setup_handler_filter(self) -> None:
+        """After setup(queue=True), extra handler filter only passes matching name."""
+        setup(queue=True)
+        h = logging.Handler()
+        name = f"{SRC_LOGGER_PREFIX}.filter_test"
+        # handler propagates to root's queue and filter by name.
+        _ = get_logger(name, handlers=[h])
+
+        assert len(h.filters) == 1
+        (filterer,) = h.filters
+
+        matching = make_record(name=name)
+        other = make_record(name="other.logger")
+
+        assert self.is_filter_callable(filterer)
+
+        assert filterer(matching) is True
+        assert filterer(other) is False
 
     def teardown_method(self) -> None:
         """Clean up any loggers we created."""
