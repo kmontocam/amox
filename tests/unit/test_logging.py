@@ -139,12 +139,6 @@ class TestHasHandler:
 class TestGetLogger:
     """Tests for `get_logger()`: named logger creation inline."""
 
-    def is_filter_callable(
-        self, obj: logging.Filter | FilterCallable | SupportsFilter
-    ) -> t.TypeGuard[FilterCallable]:
-        """Guard lambda filter used in `get_logger()` for additional handlers."""
-        return callable(obj)
-
     @pytest.mark.parametrize(
         ("name", "expected"),
         [
@@ -434,6 +428,9 @@ class TestGetLogger:
         logger = get_logger(name, handlers=[h])
 
         main_thread = threading.current_thread()
+
+        self.drop_root_default_stream()
+
         logger.info("test message")
 
         assert event.wait(timeout=2.0)
@@ -444,31 +441,52 @@ class TestGetLogger:
         setup(queue=True)
         records: list[logging.LogRecord] = []
         event = threading.Event()
-        throttle = 0.02
-        n = 8
+        throttle = 0.04
+        n = 4
 
         class BlockingHandler(logging.Handler):
             """Blocking I/O handler."""
 
+            @t.override
             def emit(self, record: logging.LogRecord) -> None:
                 time.sleep(throttle)
                 records.append(record)
                 if len(records) == n:
                     event.set()
 
-        slow = BlockingHandler()
+        h = BlockingHandler()
         name = f"{SRC_LOGGER_PREFIX}.nonblocking"
-        logger = get_logger(name, handlers=[slow])
+        logger = get_logger(name, handlers=[h])
 
-        # no throttle, just spends time writing to `sys.stderr`
+        self.drop_root_default_stream()
+
+        # handler takes (n * throttle) to emit all records, yet logging
+        # must not block I/O
         for i in range(n):
             message = f"tick: {i}"
             logger.info(message)
 
         # blocking handler has not managed to emit any record
         assert len(records) == 0
-        assert event.wait(timeout=2.0)
+        assert event.wait(timeout=n + 1 * throttle)
         assert len(records) == n
+
+    def is_filter_callable(
+        self, obj: logging.Filter | FilterCallable | SupportsFilter
+    ) -> t.TypeGuard[FilterCallable]:
+        """Guard lambda filter used in `get_logger()` for additional handlers."""
+        return callable(obj)
+
+    def drop_root_default_stream(self) -> logging.handlers.QueueListener:
+        """Remove the default stream handler from the root queue listener."""
+        assert len(logging.root.handlers) == 1
+        (handler,) = logging.root.handlers
+        assert isinstance(handler, LiveQueueHandler)
+        listener = handler.listener
+        assert listener is not None
+        handlers = [lh for lh in listener.handlers if lh.name != amox.__name__]
+        listener.handlers = tuple(handlers)
+        return listener
 
     def teardown_method(self) -> None:
         """Clean up any loggers we created."""
