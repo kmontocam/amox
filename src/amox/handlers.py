@@ -85,7 +85,7 @@ def create_handler(
 @t.overload
 def create_handler(
     *,
-    queue: t.Literal[False] | None = None,
+    queue: t.Literal[False],
     formatter: logging.Formatter | None = None,
     handlers: abc.Sequence[logging.Handler] | None = None,
     root: bool = False,
@@ -96,8 +96,8 @@ def create_handler(
 def create_handler(
     *,
     queue: bool | None = None,
-    formatter: logging.Formatter | None,
-    handlers: abc.Sequence[logging.Handler] | None,
+    formatter: logging.Formatter | None = None,
+    handlers: abc.Sequence[logging.Handler] | None = None,
     root: bool = False,
 ) -> logging.StreamHandler[t.TextIO] | LiveQueueHandler: ...
 
