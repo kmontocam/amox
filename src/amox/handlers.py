@@ -5,6 +5,7 @@ import logging
 import sys
 import traceback
 import typing as t
+from collections import abc
 from logging.handlers import QueueHandler, QueueListener
 from queue import Queue
 
@@ -71,13 +72,43 @@ class LiveQueueHandler(QueueHandler):
         return record
 
 
+@t.overload
+def create_handler(
+    *,
+    queue: t.Literal[True],
+    formatter: logging.Formatter | None = None,
+    handlers: abc.Sequence[logging.Handler] | None = None,
+    root: bool = False,
+) -> LiveQueueHandler: ...
+
+
+@t.overload
+def create_handler(
+    *,
+    queue: t.Literal[False] | None = None,
+    formatter: logging.Formatter | None = None,
+    handlers: abc.Sequence[logging.Handler] | None = None,
+    root: bool = False,
+) -> logging.StreamHandler[t.TextIO]: ...
+
+
+@t.overload
+def create_handler(
+    *,
+    queue: bool | None = None,
+    formatter: logging.Formatter | None,
+    handlers: abc.Sequence[logging.Handler] | None,
+    root: bool = False,
+) -> logging.StreamHandler[t.TextIO] | LiveQueueHandler: ...
+
+
 def create_handler(
     *,
     queue: bool | None = None,
     formatter: logging.Formatter | None = None,
-    handlers: list[logging.Handler] | None = None,
+    handlers: abc.Sequence[logging.Handler] | None = None,
     root: bool = False,
-) -> logging.Handler:
+) -> logging.StreamHandler[t.TextIO] | LiveQueueHandler:
     """
     Create handler based on configuration.
 

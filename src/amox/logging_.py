@@ -9,6 +9,7 @@ import pathlib
 import types
 import typing as t
 import warnings
+from collections import abc
 
 import amox
 from amox.formatters import AmoxFormatter, create_formatter
@@ -135,7 +136,7 @@ def get_logger(
     queue: bool | None = None,
     level: LogLevel | int | None = None,
     log_format: LogFormat | None = None,
-    handlers: list[logging.Handler] | None = None,
+    handlers: abc.Sequence[logging.Handler] | None = None,
     **opts: t.Unpack[FormatterOptions],
 ) -> logging.Logger:
     """
