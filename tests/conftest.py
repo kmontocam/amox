@@ -6,6 +6,9 @@ import types
 
 import pytest
 
+from amox.parsers import JsonParser, LogfmtParser, LogLineParser
+from amox.types_ import LogFormat
+
 ExcInfo = tuple[type[BaseException], BaseException, types.TracebackType]
 
 
@@ -53,3 +56,21 @@ def make_record(
 def record() -> logging.LogRecord:
     """Record instance with defaults."""
     return make_record()
+
+
+@pytest.fixture(
+    scope="session",
+    params=["logfmt", "json"],
+    ids=["logfmt", "json"],
+)
+def log_format(request: pytest.FixtureRequest) -> LogFormat:
+    """Log format literal for factories."""
+    return request.param
+
+
+@pytest.fixture(scope="session")
+def parser(log_format: LogFormat) -> LogLineParser:
+    """Parser matching `LogFormat`s."""
+    if log_format == "logfmt":
+        return LogfmtParser()
+    return JsonParser()

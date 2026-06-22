@@ -8,7 +8,7 @@ import typing as t
 import pytest
 
 from amox.env import LOG_FORMAT_ENV, LOG_LEVEL_ENV
-from amox.parsers import JsonParser, LogfmtParser, LogLineParser
+from amox.parsers import LogLineParser
 from amox.types_ import LogFormat
 from tests.functional import (
     ParsabilityScript,
@@ -27,15 +27,6 @@ class TestGetLogger(ParsabilityTests):
     def parsability_script(self) -> ParsabilityScript:
         return get_logger
 
-    @pytest.mark.functional
-    @pytest.mark.parametrize(
-        ("log_format", "parser"),
-        [
-            ("logfmt", LogfmtParser()),
-            ("json", JsonParser()),
-        ],
-        ids=["logfmt", "json"],
-    )
     def test_handlers_parsability(
         self,
         log_format: LogFormat,

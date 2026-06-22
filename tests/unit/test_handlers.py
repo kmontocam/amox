@@ -17,7 +17,7 @@ from tests.conftest import make_exc_info, make_record
 class TestLiveQueueHandler:
     """Tests for `LiveQueueHandler` auto-start and prepare behavior."""
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def handler(self) -> LiveQueueHandler:
         """`LiveQueueHandler` handler."""
         queue: SimpleQueue[logging.LogRecord] = SimpleQueue()

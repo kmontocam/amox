@@ -8,7 +8,7 @@ from amox.parsers import JsonParser, LogfmtParser, ParseError
 class TestLogfmtParser:
     """Tests for `LogfmtParser`."""
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def parser(self) -> LogfmtParser:
         """Logfmt parser."""
         return LogfmtParser()

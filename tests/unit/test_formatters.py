@@ -117,7 +117,7 @@ class FormatterBuilder[T: AmoxFormatter](t.Protocol):
 class TestFormatTimestamp:
     """Tests for timestamp formatting with timezone handling."""
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def formatter_builder(self) -> type[AmoxFormatter]:
         """`AmoxFormatter` constructor."""
         return AmoxFormatter
@@ -193,7 +193,7 @@ class TestToSnake:
 class TestCreateFormatter[T: AmoxFormatter]:
     """Tests for the `create_formatter` factory function."""
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def create_formatter(self) -> CreateFormatter:
         """`create_formatter()` factory."""
         return create_formatter
@@ -250,7 +250,7 @@ class TestCreateFormatter[T: AmoxFormatter]:
         assert isinstance(formatter, expected)
 
 
-class AmoxFormatterTests:
+class FormatterTests:
     """
     Shared formatter behavior tests.
 
@@ -258,12 +258,12 @@ class AmoxFormatterTests:
     `builder` and `parser` fixtures for the specific format under test.
     """
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def builder(self) -> FormatterBuilder[AmoxFormatter]:
         """Protocol to define a formatter builder."""
         raise NotImplementedError
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def parser(self) -> LogfmtParser | JsonParser:
         """Protocol to define a parser."""
         raise NotImplementedError
@@ -466,11 +466,11 @@ class AmoxFormatterTests:
         assert ("exception" in parsed) == exc_info
 
 
-class TestLogfmtFormatter(AmoxFormatterTests):
+class TestLogfmtFormatter(FormatterTests):
     """Tests for `LogfmtFormatter` output and quoting behavior."""
 
     @t.override
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def builder(self) -> FormatterBuilder[LogfmtFormatter]:
         def build(**opts: t.Unpack[FormatterOptions]) -> LogfmtFormatter:
             return create_formatter("logfmt", **opts)
@@ -478,7 +478,7 @@ class TestLogfmtFormatter(AmoxFormatterTests):
         return build
 
     @t.override
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def parser(self) -> LogfmtParser:
         return LogfmtParser()
 
@@ -611,11 +611,11 @@ class TestLogfmtFormatter(AmoxFormatterTests):
         assert builder().encode_value(value) == expected
 
 
-class TestJsonFormatter(AmoxFormatterTests):
+class TestJsonFormatter(FormatterTests):
     """Tests for `JsonFormatter` output."""
 
     @t.override
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def builder(self) -> FormatterBuilder[JsonFormatter]:
         def build(**opts: t.Unpack[FormatterOptions]) -> JsonFormatter:
             return create_formatter("json", **opts)
@@ -623,6 +623,6 @@ class TestJsonFormatter(AmoxFormatterTests):
         return build
 
     @t.override
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def parser(self) -> JsonParser:
         return JsonParser()
