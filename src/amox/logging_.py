@@ -112,7 +112,7 @@ def config(**opts: t.Unpack[ConfigOptions]) -> DictConfig:
     loggers: dict[str, LoggerConfig] = {}
     # logger namespace (tree): set to DEBUG.
     if name := opts.get("name"):
-        loggers[name] = {"level": "DEBUG"}
+        loggers[name] = {"level": DEFAULT_LOGGER_LEVEL}
 
     for entry in opts.get("loggers", []):
         if isinstance(entry, (str, types.ModuleType)):
