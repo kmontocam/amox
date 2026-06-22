@@ -6,6 +6,8 @@ import logging.config
 import logging.handlers
 import pathlib
 import sys
+import threading
+import time
 import types
 import typing as t
 from collections import abc
@@ -411,6 +413,62 @@ class TestGetLogger:
 
         assert filterer(matching) is True
         assert filterer(other) is False
+
+    def test_setup_handler_queue_emission(self) -> None:
+        """After setup(queue=True), additional handlers records flow through queue."""
+        setup(queue=True)
+        thread: threading.Thread | None = None
+        event = threading.Event()
+
+        class RecordingHandler(logging.Handler):
+            """Capture thread activity inside handler."""
+
+            @t.override
+            def emit(self, record: logging.LogRecord) -> None:
+                nonlocal thread
+                thread = threading.current_thread()
+                event.set()
+
+        h = RecordingHandler()
+        name = f"{SRC_LOGGER_PREFIX}.emission"
+        logger = get_logger(name, handlers=[h])
+
+        main_thread = threading.current_thread()
+        logger.info("test message")
+
+        assert event.wait(timeout=2.0)
+        assert thread != main_thread
+
+    def test_setup_handler_queue_nonblocking(self) -> None:
+        """After setup(queue=True), handlers do not block I/O."""
+        setup(queue=True)
+        records: list[logging.LogRecord] = []
+        event = threading.Event()
+        throttle = 0.02
+        n = 8
+
+        class BlockingHandler(logging.Handler):
+            """Blocking I/O handler."""
+
+            def emit(self, record: logging.LogRecord) -> None:
+                time.sleep(throttle)
+                records.append(record)
+                if len(records) == n:
+                    event.set()
+
+        slow = BlockingHandler()
+        name = f"{SRC_LOGGER_PREFIX}.nonblocking"
+        logger = get_logger(name, handlers=[slow])
+
+        # no throttle, just spends time writing to `sys.stderr`
+        for i in range(n):
+            message = f"tick: {i}"
+            logger.info(message)
+
+        # blocking handler has not managed to emit any record
+        assert len(records) == 0
+        assert event.wait(timeout=2.0)
+        assert len(records) == n
 
     def teardown_method(self) -> None:
         """Clean up any loggers we created."""
