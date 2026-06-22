@@ -148,6 +148,7 @@ def create_handler(
 
     q = Queue()
     handlers = handlers or list[logging.Handler]()
+    [h.setFormatter(formatter) for h in handlers]
     listener = QueueListener(q, stream, *handlers, respect_handler_level=True)
     lqh = LiveQueueHandler(q)
     lqh.name = amox.__name__

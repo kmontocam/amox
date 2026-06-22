@@ -75,6 +75,9 @@ def setup(**opts: t.Unpack[SetupOptions]) -> None:
         if handlers:
             msg = f"dropping {logger_name=} formatter: overwritten by root's config."
             log.warning(msg)
+            # NOTE: this will cause that existing additional handlers on queue will be
+            # dropped too. These need to propagate up all the way back to the root with
+            # the respective filterer.
             for h in handlers:
                 logger.removeHandler(h)
             logger.propagate = True
@@ -197,11 +200,10 @@ def get_logger(
 
     logger.setLevel(level)
 
-    for h in handlers:
-        h.formatter = formatter
-
+    # skip creation of a new handler on existing configuration
     if configured_by_setup:
         root = next(h for h in logging.root.handlers if h.name == amox.__name__)
+        [h.setFormatter(formatter) for h in handlers]
         if isinstance(root, LiveQueueHandler) and (listener := root.listener):
             # append to queue handler to produce non blocking I/O regardless of the
             # logger on the tree.
@@ -216,6 +218,7 @@ def get_logger(
     logger.addHandler(handler)
 
     if not isinstance(handler, LiveQueueHandler):
+        [h.setFormatter(formatter) for h in handlers]
         [logger.addHandler(h) for h in handlers]
 
     if name is not None:
