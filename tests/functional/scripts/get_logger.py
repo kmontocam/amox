@@ -4,7 +4,7 @@ import logging
 
 from amox import get_logger
 
-MSG: str = "hello"
+MSG: str = "message"
 NAME: str = "src.service"
 LEVEL: int = logging.INFO
 
