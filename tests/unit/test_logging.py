@@ -1,11 +1,11 @@
 """Unit tests for `src.amox.logging_` module."""
 
-import io
 import json
 import logging
 import logging.config
 import logging.handlers
 import pathlib
+import sys
 import types
 
 import jsonschema
@@ -84,7 +84,7 @@ class TestHasHandler:
         expects: bool,
     ) -> None:
         """Detects amox-named handlers on root logger."""
-        handler = logging.StreamHandler()
+        handler = logging.Handler()
         handler.name = handler_name
         logging.root.addHandler(handler)
 
@@ -106,7 +106,7 @@ class TestHasHandler:
     ) -> None:
         """Detects amox-named handlers on a named logger."""
         logger = logging.getLogger(f"{SRC_LOGGER_PREFIX}.has_handler")
-        handler = logging.StreamHandler()
+        handler = logging.Handler()
         handler.name = handler_name
         logger.addHandler(handler)
 
@@ -214,7 +214,7 @@ class TestGetLogger:
         expected: int,
     ) -> None:
         """Additional handlers are included and have formatter attached by amox."""
-        stream = logging.StreamHandler(io.StringIO())
+        stream = logging.StreamHandler(sys.stderr)
         logger = get_logger(f"{SRC_LOGGER_PREFIX}.user", queue=queue, handlers=[stream])
         assert len(logger.handlers) == expected
         (handler, *_) = logger.handlers
@@ -339,7 +339,7 @@ class TestGetLogger:
     ) -> None:
         """After `setup(queue=)`, user-provided handlers are added."""
         setup(queue=queue)
-        h = logging.StreamHandler(io.StringIO())
+        h = logging.Handler()
         name = f"{SRC_LOGGER_PREFIX}.setup_active.handlers"
         logger = get_logger(name, handlers=[h])
 
