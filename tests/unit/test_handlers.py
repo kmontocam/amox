@@ -8,7 +8,7 @@ from queue import SimpleQueue
 import pytest
 
 import amox.handlers
-from amox.env import LOG_LEVEL_ENV, LOG_QUEUE_ENV
+from amox.env import LEVEL_ENV, QUEUE_ENV
 from amox.formatters import LogfmtFormatter
 from amox.handlers import LiveQueueHandler, create_handler
 from tests.conftest import make_exc_info, make_record
@@ -139,7 +139,7 @@ class TestCreateHandler:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """No queue defers to `AMOX_QUEUE` env var."""
-        monkeypatch.setenv(LOG_QUEUE_ENV, env)
+        monkeypatch.setenv(QUEUE_ENV, env)
         handler = create_handler()
 
         assert isinstance(handler, expected)
@@ -151,7 +151,7 @@ class TestCreateHandler:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Explicit queue parameter overrides `AMOX_QUEUE` env var."""
-        monkeypatch.setenv(LOG_QUEUE_ENV, "true")
+        monkeypatch.setenv(QUEUE_ENV, "true")
         handler = create_handler(queue=False)
 
         assert isinstance(handler, logging.StreamHandler)
@@ -176,7 +176,7 @@ class TestCreateHandler:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """root=True sets the root logger level from env var."""
-        monkeypatch.setenv(LOG_LEVEL_ENV, env)
+        monkeypatch.setenv(LEVEL_ENV, env)
 
         handler = create_handler(root=True)
 
@@ -189,7 +189,7 @@ class TestCreateHandler:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """root=False does not modify the root logger level."""
-        monkeypatch.setenv(LOG_LEVEL_ENV, "INFO")
+        monkeypatch.setenv(LEVEL_ENV, "INFO")
         logging.root.setLevel(logging.WARNING)
 
         handler = create_handler(root=False)

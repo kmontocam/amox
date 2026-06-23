@@ -3,8 +3,8 @@
 import pytest
 
 from amox.env import (
-    LOG_FORMAT_ENV,
-    LOG_LEVEL_ENV,
+    FORMAT_ENV,
+    LEVEL_ENV,
     resolve_bool,
     resolve_format,
     resolve_level,
@@ -52,9 +52,9 @@ class TestResolveFormat:
         Invalid values fall back to the default and emit an `AmoxConfigWarning`.
         """
         if env is None:
-            monkeypatch.delenv(LOG_FORMAT_ENV, raising=False)
+            monkeypatch.delenv(FORMAT_ENV, raising=False)
         else:
-            monkeypatch.setenv(LOG_FORMAT_ENV, env)
+            monkeypatch.setenv(FORMAT_ENV, env)
 
         result = resolve_format()
 
@@ -130,9 +130,9 @@ class TestResolveLevel:
         Invalid values fall back to the default and emit an `AmoxConfigWarning`.
         """
         if env is None:
-            monkeypatch.delenv(LOG_LEVEL_ENV, raising=False)
+            monkeypatch.delenv(LEVEL_ENV, raising=False)
         else:
-            monkeypatch.setenv(LOG_LEVEL_ENV, env)
+            monkeypatch.setenv(LEVEL_ENV, env)
 
         result = resolve_level()
 

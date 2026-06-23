@@ -8,17 +8,17 @@ import warnings
 from amox.types_ import LogFormat, LogLevel
 from amox.warnings_ import AmoxConfigWarning
 
-LOG_FORMAT_ENV = "AMOX_LOG_FORMAT"
+FORMAT_ENV = "AMOX_FORMAT"
 """
 Convention environment variable name to configure log format.
 """
 
-LOG_LEVEL_ENV = "AMOX_LOG_LEVEL"
+LEVEL_ENV = "AMOX_LEVEL"
 """
 Convention environment variable name to configure the root logger level.
 """
 
-LOG_QUEUE_ENV = "AMOX_QUEUE"
+QUEUE_ENV = "AMOX_QUEUE"
 """
 Convention environment variable name to enable/disable queue-based I/O.
 """
@@ -84,12 +84,12 @@ Fallback usage of queue handler when `AMOX_QUEUE` is unset.
 
 def resolve_format() -> LogFormat:
     """
-    Resolve log format from `AMOX_LOG_FORMAT`.
+    Resolve log format from `AMOX_FORMAT`.
 
     When the environment variable is not set, falls back to `DEFAULT_FORMAT`.
     Invalid values trigger an `AmoxConfigWarning` and fall back to the default.
     """
-    env = os.environ.get(LOG_FORMAT_ENV)
+    env = os.environ.get(FORMAT_ENV)
     if env is None:
         return DEFAULT_FORMAT
     normalized = env.strip().lower()
@@ -98,7 +98,7 @@ def resolve_format() -> LogFormat:
 
     warnings.warn(
         (
-            f"{LOG_FORMAT_ENV}={env!r} is not valid."
+            f"{FORMAT_ENV}={env!r} is not valid."
             f" Expected one of: {', '.join(sorted(LOG_FORMATS))}."
             f" Falling back to {DEFAULT_FORMAT!r}."
         ),
@@ -110,15 +110,15 @@ def resolve_format() -> LogFormat:
 
 def resolve_level() -> LogLevel:
     """
-    Resolve root logger level from `AMOX_LOG_LEVEL`.
+    Resolve logger level from `AMOX_..._LEVEL`.
 
-    When the environment variable is not set, falls back to `DEFAULT_ROOT_LEVEL`.
+    When the environment variable is not set, falls back to `DEFAULT_LEVEL`.
     Invalid values trigger an `AmoxConfigWarning` and fall back to the default.
 
     Reference:
-        - `https://docs.python.org/3/library/logging.html#logging-levels`
+        `https://docs.python.org/3/library/logging.html#logging-levels`
     """
-    env = os.environ.get(LOG_LEVEL_ENV)
+    env = os.environ.get(LEVEL_ENV)
     if env is None:
         return DEFAULT_LEVEL
     stripped = env.strip()
@@ -132,7 +132,7 @@ def resolve_level() -> LogLevel:
 
     warnings.warn(
         (
-            f"{LOG_LEVEL_ENV}={env!r} is not a valid log level."
+            f"{LEVEL_ENV}={env!r} is not a valid log level."
             f" Expected one of: {', '.join(sorted(LOG_LEVELS))}."
             f" Falling back to {DEFAULT_LEVEL!r}."
         ),

@@ -7,6 +7,7 @@ import uuid
 
 import pytest
 
+from amox.env import FORMAT_ENV
 from amox.formatters import (
     ALL_EXCLUDE,
     DEFAULT_FIELD_REMAP,
@@ -245,7 +246,7 @@ class TestCreateFormatter[T: AmoxFormatter]:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Format resolved from AMOX_LOG_FORMAT env var."""
-        monkeypatch.setenv("AMOX_LOG_FORMAT", env)
+        monkeypatch.setenv(FORMAT_ENV, env)
         formatter = create_formatter()
         assert isinstance(formatter, expected)
 
