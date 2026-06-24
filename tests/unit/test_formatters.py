@@ -245,7 +245,7 @@ class TestCreateFormatter[T: AmoxFormatter]:
         create_formatter: CreateFormatter,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """Format resolved from AMOX_LOG_FORMAT env var."""
+        """Format resolved from `AMOX_FORMAT` env var."""
         monkeypatch.setenv(FORMAT_ENV, env)
         formatter = create_formatter()
         assert isinstance(formatter, expected)

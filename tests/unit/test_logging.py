@@ -16,10 +16,16 @@ import jsonschema
 import pytest
 
 import amox
-from amox.formatters import AmoxFormatter
+from amox.env import (
+    EXISTING_LEVEL_ENV,
+    FORMAT_ENV,
+    NAMESPACE_LEVEL_ENV,
+    QUEUE_ENV,
+    resolve_level,
+)
+from amox.formatters import AmoxFormatter, JsonFormatter, LogfmtFormatter
 from amox.handlers import LiveQueueHandler, has_handler
 from amox.logging_ import (
-    DEFAULT_EXISTING_LOGGER_LEVEL,
     config,
     dict_config,
     get_logger,
@@ -140,6 +146,59 @@ class TestGetLogger:
     """Tests for `get_logger()`: named logger creation inline."""
 
     @pytest.mark.parametrize(
+        ("env", "expected"),
+        [
+            (None, LogfmtFormatter),
+            ("logfmt", LogfmtFormatter),
+            ("json", JsonFormatter),
+        ],
+        ids=["unset", "logfmt", "json"],
+    )
+    def test_format_env(
+        self,
+        env: str | None,
+        expected: type[AmoxFormatter],
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """`get_logger()` honors `AMOX_FORMAT` env var."""
+        if env is None:
+            monkeypatch.delenv(FORMAT_ENV, raising=False)
+        else:
+            monkeypatch.setenv(FORMAT_ENV, env)
+
+        # disable queue for direct formatter access
+        logger = get_logger(f"{SRC_LOGGER_PREFIX}.format_env", queue=False)
+        assert len(logger.handlers) == 1
+        (handler,) = logger.handlers
+        assert isinstance(handler.formatter, expected)
+
+    @pytest.mark.parametrize(
+        ("env", "expected"),
+        [
+            (None, LiveQueueHandler),
+            ("true", LiveQueueHandler),
+            ("false", logging.StreamHandler),
+        ],
+        ids=["unset", "queue", "stream"],
+    )
+    def test_queue_env(
+        self,
+        env: str | None,
+        expected: type[logging.Handler],
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """`get_logger()` honors `AMOX_QUEUE` env var."""
+        if env is None:
+            monkeypatch.delenv(QUEUE_ENV, raising=False)
+        else:
+            monkeypatch.setenv(QUEUE_ENV, env)
+
+        logger = get_logger(f"{SRC_LOGGER_PREFIX}.queue_env")
+        assert len(logger.handlers) == 1
+        (handler,) = logger.handlers
+        assert isinstance(handler, expected)
+
+    @pytest.mark.parametrize(
         ("name", "expected"),
         [
             (f"{SRC_LOGGER_PREFIX}.named", f"{SRC_LOGGER_PREFIX}.named"),
@@ -153,9 +212,10 @@ class TestGetLogger:
         assert logger.name == expected
 
     def test_default_level(self) -> None:
-        """Default level is DEBUG so all messages pass through."""
+        """Default level follows `AMOX_NAMESPACE_LEVEL` env var (DEBUG by default)."""
         logger = get_logger(f"{SRC_LOGGER_PREFIX}.debug")
-        assert logger.level == logging.DEBUG
+        log_levels_map = logging.getLevelNamesMapping()
+        assert logger.level == log_levels_map[resolve_level(NAMESPACE_LEVEL_ENV)]
 
     def test_custom_level(self) -> None:
         """Explicit level parameter sets the logger level."""
@@ -502,6 +562,83 @@ class TestGetLogger:
 class TestSetup:
     """Tests for `setup()`: root logger configuration via dictConfig."""
 
+    @pytest.mark.parametrize(
+        ("env", "expected"),
+        [
+            (None, logging.DEBUG),
+            ("DEBUG", logging.DEBUG),
+            ("INFO", logging.INFO),
+        ],
+        ids=["unset", "debug", "info"],
+    )
+    def test_namespace_level_env(
+        self,
+        env: str | None,
+        expected: int,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """`setup(name=...)` honors `AMOX_NAMESPACE_LEVEL` env var."""
+        if env is None:
+            monkeypatch.delenv(NAMESPACE_LEVEL_ENV, raising=False)
+        else:
+            monkeypatch.setenv(NAMESPACE_LEVEL_ENV, env)
+
+        setup(name=SRC_LOGGER_PREFIX)
+
+        assert logging.getLogger(SRC_LOGGER_PREFIX).level == expected
+
+    @pytest.mark.parametrize(
+        ("env", "expected"),
+        [
+            (None, logging.WARNING),
+            ("WARNING", logging.WARNING),
+            ("ERROR", logging.ERROR),
+        ],
+        ids=["unset", "warning", "error"],
+    )
+    def test_existing_level_env(
+        self,
+        env: str | None,
+        expected: int,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """`setup(loggers=[...])` honors `AMOX_EXISTING_LEVEL` env var."""
+        if env is None:
+            monkeypatch.delenv(EXISTING_LEVEL_ENV, raising=False)
+        else:
+            monkeypatch.setenv(EXISTING_LEVEL_ENV, env)
+
+        setup(loggers=[THIRD_PARTY_LOGGER])
+
+        assert logging.getLogger(THIRD_PARTY_LOGGER).level == expected
+
+    @pytest.mark.parametrize(
+        ("env", "expected"),
+        [
+            (None, LiveQueueHandler),
+            ("true", LiveQueueHandler),
+            ("false", logging.StreamHandler),
+        ],
+        ids=["unset_default", "queue", "stream"],
+    )
+    def test_queue_env(
+        self,
+        env: str | None,
+        expected: type[logging.Handler],
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """`setup()` honors `AMOX_QUEUE` env var."""
+        if env is None:
+            monkeypatch.delenv(QUEUE_ENV, raising=False)
+        else:
+            monkeypatch.setenv(QUEUE_ENV, env)
+
+        setup()
+
+        assert len(logging.root.handlers) == 1
+        (handler,) = logging.root.handlers
+        assert isinstance(handler, expected)
+
     def test_installs_handler(self) -> None:
         """`setup()` installs a handler on the root logger."""
         setup()
@@ -553,7 +690,7 @@ class TestSetup:
 
         assert (
             logging.getLogger(name).level
-            == logging.getLevelNamesMapping()[DEFAULT_EXISTING_LOGGER_LEVEL]
+            == logging.getLevelNamesMapping()[resolve_level(EXISTING_LEVEL_ENV)]
         )
 
     @pytest.mark.parametrize(
@@ -576,11 +713,15 @@ class TestSetup:
         assert logging.getLogger(name).level == logging.getLevelNamesMapping()[level]
 
     def test_name_scopes(self) -> None:
-        """name=... sets named logger to DEBUG, root stays at WARNING."""
+        """name=... sets logger to `AMOX_NAMESPACE_LEVEL`, root to `AMOX_LEVEL`."""
         setup(name=SRC_LOGGER_PREFIX)
 
-        assert logging.getLogger(SRC_LOGGER_PREFIX).level == logging.DEBUG
-        assert logging.root.level == logging.WARNING
+        log_levels_map = logging.getLevelNamesMapping()
+        assert (
+            logging.getLogger(SRC_LOGGER_PREFIX).level
+            == log_levels_map[resolve_level(NAMESPACE_LEVEL_ENV)]
+        )
+        assert logging.root.level == logging.getLevelNamesMapping()[resolve_level()]
 
     def test_removes_get_logger_handlers(self) -> None:
         """Removes handlers from `get_logger`-configured loggers."""

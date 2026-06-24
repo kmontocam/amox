@@ -3,17 +3,21 @@
 import pytest
 
 from amox.env import (
+    EXISTING_LEVEL_ENV,
     FORMAT_ENV,
+    LEVEL_DEFAULTS,
     LEVEL_ENV,
+    NAMESPACE_LEVEL_ENV,
     resolve_bool,
     resolve_format,
     resolve_level,
 )
+from amox.types_ import LogLevel
 from amox.warnings_ import AmoxConfigWarning
 
 
 class TestResolveFormat:
-    """Tests for `resolve_format`: reads `AMOX_LOG_FORMAT` env var."""
+    """Tests for `resolve_format`: reads `AMOX_FORMAT` env var."""
 
     @pytest.mark.parametrize(
         ("env", "expected", "warns"),
@@ -47,7 +51,7 @@ class TestResolveFormat:
         recwarn: pytest.WarningsRecorder,
     ) -> None:
         """
-        Resolves format from AMOX_LOG_FORMAT environment variable.
+        Resolves format from `AMOX_FORMAT` environment variable.
 
         Invalid values fall back to the default and emit an `AmoxConfigWarning`.
         """
@@ -69,12 +73,17 @@ class TestResolveFormat:
 
 
 class TestResolveLevel:
-    """Tests for `resolve_level`: reads `AMOX_LOG_LEVEL` env var."""
+    """Tests for `resolve_level`: reads `AMOX_*_LEVEL` env vars."""
 
+    @pytest.mark.parametrize(
+        "env_name",
+        [LEVEL_ENV, NAMESPACE_LEVEL_ENV, EXISTING_LEVEL_ENV],
+        ids=["root", "namespace", "existing"],
+    )
     @pytest.mark.parametrize(
         ("env", "expected", "warns"),
         [
-            (None, "WARNING", False),
+            (None, None, False),
             ("DEBUG", "DEBUG", False),
             ("INFO", "INFO", False),
             ("WARNING", "WARNING", False),
@@ -90,9 +99,9 @@ class TestResolveLevel:
             ("40", "ERROR", False),
             ("50", "CRITICAL", False),
             ("0", "NOTSET", False),
-            ("VERBOSE", "WARNING", True),
-            ("", "WARNING", True),
-            ("99", "WARNING", True),
+            ("VERBOSE", None, True),
+            ("", None, True),
+            ("99", None, True),
         ],
         ids=[
             "unset_default",
@@ -116,25 +125,30 @@ class TestResolveLevel:
             "numeric_invalid",
         ],
     )
-    def test_resolve_level(
+    def test_resolve_level(  # noqa: PLR0913
         self,
+        env_name: str,
         env: str | None,
-        expected: str,
+        expected: LogLevel | None,
         warns: bool,
         monkeypatch: pytest.MonkeyPatch,
         recwarn: pytest.WarningsRecorder,
     ) -> None:
         """
-        Resolves level from AMOX_LOG_LEVEL environment variable.
+        Resolves level from any `AMOX_*_LEVEL` environment variable.
 
-        Invalid values fall back to the default and emit an `AmoxConfigWarning`.
+        `None` expected means the env var's registered default. Invalid values
+        fall back to that default and emit an `AmoxConfigWarning`.
         """
         if env is None:
-            monkeypatch.delenv(LEVEL_ENV, raising=False)
+            monkeypatch.delenv(env_name, raising=False)
         else:
-            monkeypatch.setenv(LEVEL_ENV, env)
+            monkeypatch.setenv(env_name, env)
 
-        result = resolve_level()
+        result = resolve_level(env_name)
+
+        if expected is None:
+            expected = LEVEL_DEFAULTS[env_name]
 
         assert result == expected
 
@@ -144,6 +158,15 @@ class TestResolveLevel:
             assert warn.category is AmoxConfigWarning
         else:
             assert len(recwarn) == 0
+
+    def test_resolve_level_unknown_env(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Unknown `env_name` raises `ValueError`."""
+        monkeypatch.setenv("AMOX_UNKNOWN_LEVEL", "DEBUG")
+        with pytest.raises(ValueError, match="not a registered level"):
+            resolve_level("AMOX_UNKNOWN_LEVEL")
 
 
 class TestResolveBool:

@@ -549,28 +549,29 @@ class ConfigOptions(FormatterOptions, total=False):
 
     name: str
     """
-    System logger namespace. Sets tree log level to `DEBUG` for the given name,
-    root and third party loggers stay at the configured level.
+    System logger namespace. Sets the tree log level for the given name via
+    `AMOX_NAMESPACE_LEVEL` environment variable (defaults to `'DEBUG'`), root and
+    third party loggers stay at the configured level.
 
     Typically a top-level package name.
     """
 
     format: LogFormat
     """
-    Set the log format. When omitted, reads from `AMOX_LOG_FORMAT` environment
+    Set the log format. When omitted, reads from `AMOX_FORMAT` environment
     variable, defaults to `'logfmt'`.
     """
 
     level: LogLevel
     """
-    Override the root logger level. When omitted, reads from `AMOX_LOG_LEVEL`
+    Override the root logger level. When omitted, reads from `AMOX_LEVEL`
     environment variable, defaults to `'WARNING'`.
     """
 
     loggers: list[types.ModuleType | str | LoggerLevelConfig]
     """
     List of third-party modules or logger names to cap at a specific level. Strings and
-    modules default to `WARNING`.
+    modules default to `AMOX_EXISTING_LEVEL` env var (defaults to `'WARNING'`).
     """
 
     queue: bool
