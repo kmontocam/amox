@@ -10,7 +10,13 @@ from logging.handlers import QueueHandler, QueueListener
 from queue import Queue
 
 import amox
-from amox.env import DEFAULT_QUEUE, QUEUE_ENV, resolve_bool, resolve_level
+from amox.env import (
+    DEFAULT_QUEUE,
+    QUEUE_ENV,
+    ROOT_LEVEL_ENV,
+    resolve_bool,
+    resolve_level,
+)
 from amox.formatters import QueueMixin
 
 
@@ -130,7 +136,7 @@ def create_handler(
         a single resolution call for `dictConfig`'s dynamic configuration.
 
     """
-    logging.root.setLevel(resolve_level()) if root else None
+    logging.root.setLevel(resolve_level(ROOT_LEVEL_ENV)) if root else None
 
     stream: logging.StreamHandler[t.TextIO] = logging.StreamHandler(stream=sys.stderr)
     stream.name = amox.__name__

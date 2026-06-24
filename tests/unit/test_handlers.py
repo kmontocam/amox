@@ -8,7 +8,7 @@ from queue import SimpleQueue
 import pytest
 
 import amox.handlers
-from amox.env import LEVEL_ENV, QUEUE_ENV
+from amox.env import LEVEL_ENV, QUEUE_ENV, ROOT_LEVEL_ENV
 from amox.formatters import LogfmtFormatter
 from amox.handlers import LiveQueueHandler, create_handler
 from tests.conftest import make_exc_info, make_record
@@ -176,7 +176,7 @@ class TestCreateHandler:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """root=True sets the root logger level from env var."""
-        monkeypatch.setenv(LEVEL_ENV, env)
+        monkeypatch.setenv(ROOT_LEVEL_ENV, env)
 
         handler = create_handler(root=True)
 

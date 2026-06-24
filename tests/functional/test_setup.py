@@ -7,7 +7,7 @@ import typing as t
 
 import pytest
 
-from amox.env import FORMAT_ENV, LEVEL_ENV
+from amox.env import FORMAT_ENV, ROOT_LEVEL_ENV
 from amox.logging_ import log
 from amox.parsers import LogLineParser
 from amox.types_ import LogFormat
@@ -84,7 +84,7 @@ class TestSetup(ParsabilityTests):
         env = {
             **os.environ,
             FORMAT_ENV: log_format,
-            LEVEL_ENV: level,
+            ROOT_LEVEL_ENV: level,
         }
         result: ScriptResult = script_runner(filename, env=env)
 
