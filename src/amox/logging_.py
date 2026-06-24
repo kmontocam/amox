@@ -12,7 +12,7 @@ import warnings
 from collections import abc
 
 import amox
-from amox.env import EXISTING_LEVEL_ENV, NAMESPACE_LEVEL_ENV, resolve_level
+from amox.env import EXISTING_LEVEL_ENV, LEVEL_ENV, resolve_level
 from amox.formatters import AmoxFormatter, create_formatter
 from amox.handlers import LiveQueueHandler, create_handler, has_handler
 from amox.types_ import (
@@ -106,7 +106,7 @@ def config(**opts: t.Unpack[ConfigOptions]) -> DictConfig:
     loggers: dict[str, LoggerConfig] = {}
     # logger namespace (tree): set to DEBUG.
     if name := opts.get("name"):
-        loggers[name] = {"level": resolve_level(NAMESPACE_LEVEL_ENV)}
+        loggers[name] = {"level": resolve_level(LEVEL_ENV)}
 
     for entry in opts.get("loggers", []):
         if isinstance(entry, (str, types.ModuleType)):
@@ -187,7 +187,7 @@ def get_logger(
 
     formatter = create_formatter(log_format, **opts)
     handlers = handlers or list[logging.Handler]()
-    level = level or resolve_level(NAMESPACE_LEVEL_ENV)
+    level = level or resolve_level(LEVEL_ENV)
 
     logger.setLevel(level)
 

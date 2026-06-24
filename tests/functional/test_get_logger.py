@@ -7,7 +7,7 @@ import typing as t
 
 import pytest
 
-from amox.env import FORMAT_ENV, LEVEL_ENV
+from amox.env import FORMAT_ENV, ROOT_LEVEL_ENV
 from amox.parsers import LogLineParser
 from amox.types_ import LogFormat
 from tests.functional import (
@@ -35,7 +35,7 @@ class TestGetLogger(ParsabilityTests):
     ) -> None:
         """Additional handler receives a formatted record on its stream."""
         filename = pathlib.Path(get_logger_handlers.__file__).name
-        env = {**os.environ, FORMAT_ENV: log_format, LEVEL_ENV: "INFO"}
+        env = {**os.environ, FORMAT_ENV: log_format, ROOT_LEVEL_ENV: "INFO"}
         result: ScriptResult = script_runner(filename, env=env)
 
         assert result.returncode == 0

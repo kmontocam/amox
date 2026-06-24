@@ -18,8 +18,9 @@ import amox
 from amox.env import (
     EXISTING_LEVEL_ENV,
     FORMAT_ENV,
-    NAMESPACE_LEVEL_ENV,
+    LEVEL_ENV,
     QUEUE_ENV,
+    ROOT_LEVEL_ENV,
     resolve_level,
 )
 from amox.formatters import AmoxFormatter, JsonFormatter, LogfmtFormatter
@@ -190,10 +191,10 @@ class TestGetLogger:
         assert logger.name == expected
 
     def test_default_level(self) -> None:
-        """Default level follows `AMOX_NAMESPACE_LEVEL` env var (DEBUG by default)."""
+        """Default level follows `AMOX_LEVEL` env var (DEBUG by default)."""
         logger = get_logger(f"{SRC_LOGGER_PREFIX}.debug")
         log_levels_map = logging.getLevelNamesMapping()
-        assert logger.level == log_levels_map[resolve_level(NAMESPACE_LEVEL_ENV)]
+        assert logger.level == log_levels_map[resolve_level(LEVEL_ENV)]
 
     def test_custom_level(self) -> None:
         """Explicit level parameter sets the logger level."""
@@ -555,11 +556,11 @@ class TestSetup:
         expected: int,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """`setup(name=...)` honors `AMOX_NAMESPACE_LEVEL` env var."""
+        """`setup(name=...)` honors `AMOX_LEVEL` env var."""
         if env is None:
-            monkeypatch.delenv(NAMESPACE_LEVEL_ENV, raising=False)
+            monkeypatch.delenv(LEVEL_ENV, raising=False)
         else:
-            monkeypatch.setenv(NAMESPACE_LEVEL_ENV, env)
+            monkeypatch.setenv(LEVEL_ENV, env)
 
         setup(name=SRC_LOGGER_PREFIX)
 
@@ -693,15 +694,15 @@ class TestSetup:
         assert logging.getLogger(name).level == log_levels_map[level]
 
     def test_name_scopes(self) -> None:
-        """name=... sets logger to `AMOX_NAMESPACE_LEVEL`, root to `AMOX_LEVEL`."""
+        """name=... sets logger to `AMOX_LEVEL`, root to `AMOX_ROOT_LEVEL`."""
         setup(name=SRC_LOGGER_PREFIX)
 
         log_levels_map = logging.getLevelNamesMapping()
         assert (
             logging.getLogger(SRC_LOGGER_PREFIX).level
-            == log_levels_map[resolve_level(NAMESPACE_LEVEL_ENV)]
+            == log_levels_map[resolve_level(LEVEL_ENV)]
         )
-        assert logging.root.level == log_levels_map[resolve_level()]
+        assert logging.root.level == log_levels_map[resolve_level(ROOT_LEVEL_ENV)]
 
     def test_removes_get_logger_handlers(self) -> None:
         """Removes handlers from `get_logger`-configured loggers."""

@@ -550,8 +550,8 @@ class ConfigOptions(FormatterOptions, total=False):
     name: str
     """
     System logger namespace. Sets the tree log level for the given name via
-    `AMOX_NAMESPACE_LEVEL` environment variable (defaults to `'DEBUG'`), root and
-    third party loggers stay at the configured level.
+    `AMOX_LEVEL` environment variable (defaults to `'DEBUG'`), root and third party
+    loggers stay at the configured level.
 
     Typically a top-level package name.
     """
@@ -564,7 +564,7 @@ class ConfigOptions(FormatterOptions, total=False):
 
     level: LogLevel
     """
-    Override the root logger level. When omitted, reads from `AMOX_LEVEL`
+    Override the root logger level. When omitted, reads from `AMOX_ROOT_LEVEL`
     environment variable, defaults to `'WARNING'`.
     """
 

@@ -7,7 +7,7 @@ from amox.env import (
     FORMAT_ENV,
     LEVEL_DEFAULTS,
     LEVEL_ENV,
-    NAMESPACE_LEVEL_ENV,
+    ROOT_LEVEL_ENV,
     resolve_bool,
     resolve_format,
     resolve_level,
@@ -77,7 +77,7 @@ class TestResolveLevel:
 
     @pytest.mark.parametrize(
         "env_name",
-        [LEVEL_ENV, NAMESPACE_LEVEL_ENV, EXISTING_LEVEL_ENV],
+        [ROOT_LEVEL_ENV, LEVEL_ENV, EXISTING_LEVEL_ENV],
         ids=["root", "namespace", "existing"],
     )
     @pytest.mark.parametrize(

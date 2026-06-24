@@ -48,18 +48,13 @@ Convention environment variable name to configure log format.
 
 LEVEL_ENV = "AMOX_LEVEL"
 """
-Convention environment variable name to configure the root logger level.
+Convention environment variable name to configure the level of the managed
+namespace logger (`name=` option in `setup()`/`config()`).
 """
 
 QUEUE_ENV = "AMOX_QUEUE"
 """
 Convention environment variable name to enable/disable non-blocking I/O handlers.
-"""
-
-NAMESPACE_LEVEL_ENV = "AMOX_NAMESPACE_LEVEL"
-"""
-Convention environment variable name to configure the level of the managed
-namespace logger (`name=` option in `setup()`/`config()`).
 """
 
 EXISTING_LEVEL_ENV = "AMOX_EXISTING_LEVEL"
@@ -68,14 +63,38 @@ Convention environment variable name to configure the level of third-party
 loggers (`loggers=` option in `setup()`/`config()`).
 """
 
+ROOT_LEVEL_ENV = "AMOX_ROOT_LEVEL"
+"""
+Convention environment variable name to configure the root logger level.
+"""
+
 DEFAULT_FORMAT: LogFormat = "logfmt"
 """
 Fallback log format when `AMOX_FORMAT` is unset.
 """
 
-DEFAULT_LEVEL: LogLevel = "WARNING"
+DEFAULT_LEVEL: LogLevel = "DEBUG"
 """
-Fallback log level when `AMOX_LEVEL` is unset.
+Fallback level for the managed namespace logger when `AMOX_LEVEL` is unset.
+
+Defaults to `DEBUG` so that the application's own loggers are verbose while
+third-party loggers stay quiet at the root's level.
+"""
+
+DEFAULT_QUEUE = True
+"""
+Fallback usage of queue handler when `AMOX_QUEUE` is unset.
+"""
+
+DEFAULT_EXISTING_LEVEL: LogLevel = "WARNING"
+"""
+Fallback level for third-party existing loggers listed via `loggers=` when
+`AMOX_EXISTING_LEVEL` is unset.
+"""
+
+DEFAULT_ROOT_LEVEL: LogLevel = "WARNING"
+"""
+Fallback log level when `AMOX_ROOT_LEVEL` is unset.
 
 Default matches Python's stdlib `logging` module where the root logger is created with
 `WARNING` and the internal `lastResort` handler defaults to `WARNING`: this keeps
@@ -87,29 +106,10 @@ Reference:
     - `https://docs.python.org/3/howto/logging.html#configuring-logging-for-a-library`
 """
 
-DEFAULT_NAMESPACE_LEVEL: LogLevel = "DEBUG"
-"""
-Fallback level for the managed namespace logger when `AMOX_NAMESPACE_LEVEL` is unset.
-
-Defaults to `DEBUG` so that the application's own loggers are verbose while
-third-party loggers stay quiet at the root's level.
-"""
-
-DEFAULT_EXISTING_LEVEL: LogLevel = "WARNING"
-"""
-Fallback level for third-party existing loggers listed via `loggers=` when
-`AMOX_EXISTING_LEVEL` is unset.
-"""
-
-DEFAULT_QUEUE = True
-"""
-Fallback usage of queue handler when `AMOX_QUEUE` is unset.
-"""
-
 LEVEL_DEFAULTS: dict[str, LogLevel] = {
-    LEVEL_ENV: DEFAULT_LEVEL,
-    NAMESPACE_LEVEL_ENV: DEFAULT_NAMESPACE_LEVEL,
     EXISTING_LEVEL_ENV: DEFAULT_EXISTING_LEVEL,
+    LEVEL_ENV: DEFAULT_LEVEL,
+    ROOT_LEVEL_ENV: DEFAULT_ROOT_LEVEL,
 }
 """
 Mapping of `AMOX_*_LEVEL` environment variable names to their fallback defaults.
@@ -142,7 +142,7 @@ def resolve_format() -> LogFormat:
     return DEFAULT_FORMAT
 
 
-def resolve_level(env_name: str = LEVEL_ENV) -> LogLevel:
+def resolve_level(env_name: str) -> LogLevel:
     """
     Resolve logger level from an `AMOX_*_LEVEL` environment variable.
 
@@ -150,8 +150,7 @@ def resolve_level(env_name: str = LEVEL_ENV) -> LogLevel:
     default from `LEVEL_DEFAULTS`. Invalid values trigger an `AmoxConfigWarning`
     and fall back to the default.
 
-    `env_name` must be a key in `LEVEL_DEFAULTS`. Defaults to `LEVEL_ENV`
-    (root logger level).
+    `env_name` must be a key in `LEVEL_DEFAULTS`.
 
     Raises:
         ValueError: if `env_name` is not a registered level environment
