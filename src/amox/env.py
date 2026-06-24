@@ -8,26 +8,6 @@ import warnings
 from amox.types_ import LogFormat, LogLevel
 from amox.warnings_ import AmoxConfigWarning
 
-LOG_FORMAT_ENV = "AMOX_LOG_FORMAT"
-"""
-Convention environment variable name to configure log format.
-"""
-
-LOG_LEVEL_ENV = "AMOX_LOG_LEVEL"
-"""
-Convention environment variable name to configure the root logger level.
-"""
-
-LOG_QUEUE_ENV = "AMOX_QUEUE"
-"""
-Convention environment variable name to enable/disable queue-based I/O.
-"""
-
-LOG_FORMATS: set[LogFormat] = {"json", "logfmt"}
-"""
-Valid log format identifiers for `AMOX_LOG_FORMAT`.
-"""
-
 LOG_LEVELS: set[LogLevel] = {
     "DEBUG",
     "INFO",
@@ -37,7 +17,12 @@ LOG_LEVELS: set[LogLevel] = {
     "NOTSET",
 }
 """
-Valid log level names for `AMOX_LOG_LEVEL`.
+Log level names.
+"""
+
+LOG_FORMATS: set[LogFormat] = {"json", "logfmt"}
+"""
+Valid log format names.
 """
 
 BOOL_TRUTHY: frozenset[t.Literal["1", "true"]] = frozenset({"1", "true"})
@@ -56,15 +41,41 @@ Reference:
     `https://pkg.go.dev/strconv#ParseBool`
 """
 
+FORMAT_ENV = "AMOX_FORMAT"
+"""
+Convention environment variable name to configure log format.
+"""
+
+LEVEL_ENV = "AMOX_LEVEL"
+"""
+Convention environment variable name to configure the root logger level.
+"""
+
+QUEUE_ENV = "AMOX_QUEUE"
+"""
+Convention environment variable name to enable/disable non-blocking I/O handlers.
+"""
+
+NAMESPACE_LEVEL_ENV = "AMOX_NAMESPACE_LEVEL"
+"""
+Convention environment variable name to configure the level of the managed
+namespace logger (`name=` option in `setup()`/`config()`).
+"""
+
+EXISTING_LEVEL_ENV = "AMOX_EXISTING_LEVEL"
+"""
+Convention environment variable name to configure the level of third-party
+loggers (`loggers=` option in `setup()`/`config()`).
+"""
 
 DEFAULT_FORMAT: LogFormat = "logfmt"
 """
-Fallback log format when `AMOX_LOG_FORMAT` is unset.
+Fallback log format when `AMOX_FORMAT` is unset.
 """
 
 DEFAULT_LEVEL: LogLevel = "WARNING"
 """
-Fallback log level when `AMOX_LOG_LEVEL` is unset.
+Fallback log level when `AMOX_LEVEL` is unset.
 
 Default matches Python's stdlib `logging` module where the root logger is created with
 `WARNING` and the internal `lastResort` handler defaults to `WARNING`: this keeps
@@ -72,8 +83,22 @@ third-party noise silent while surfacing warnings, errors, and critical events. 
 logging HOWTO regards this as *"the best default behavior"*.
 
 Reference:
-    — `https://docs.python.org/3/library/logging.html#logging.Logger.setLevel`
+    - `https://docs.python.org/3/library/logging.html#logging.Logger.setLevel`
     - `https://docs.python.org/3/howto/logging.html#configuring-logging-for-a-library`
+"""
+
+DEFAULT_NAMESPACE_LEVEL: LogLevel = "DEBUG"
+"""
+Fallback level for the managed namespace logger when `AMOX_NAMESPACE_LEVEL` is unset.
+
+Defaults to `DEBUG` so that the application's own loggers are verbose while
+third-party loggers stay quiet at the root's level.
+"""
+
+DEFAULT_EXISTING_LEVEL: LogLevel = "WARNING"
+"""
+Fallback level for third-party existing loggers listed via `loggers=` when
+`AMOX_EXISTING_LEVEL` is unset.
 """
 
 DEFAULT_QUEUE = True
@@ -81,15 +106,24 @@ DEFAULT_QUEUE = True
 Fallback usage of queue handler when `AMOX_QUEUE` is unset.
 """
 
+LEVEL_DEFAULTS: dict[str, LogLevel] = {
+    LEVEL_ENV: DEFAULT_LEVEL,
+    NAMESPACE_LEVEL_ENV: DEFAULT_NAMESPACE_LEVEL,
+    EXISTING_LEVEL_ENV: DEFAULT_EXISTING_LEVEL,
+}
+"""
+Mapping of `AMOX_*_LEVEL` environment variable names to their fallback defaults.
+"""
+
 
 def resolve_format() -> LogFormat:
     """
-    Resolve log format from `AMOX_LOG_FORMAT`.
+    Resolve log format from `AMOX_FORMAT`.
 
     When the environment variable is not set, falls back to `DEFAULT_FORMAT`.
     Invalid values trigger an `AmoxConfigWarning` and fall back to the default.
     """
-    env = os.environ.get(LOG_FORMAT_ENV)
+    env = os.environ.get(FORMAT_ENV)
     if env is None:
         return DEFAULT_FORMAT
     normalized = env.strip().lower()
@@ -98,7 +132,7 @@ def resolve_format() -> LogFormat:
 
     warnings.warn(
         (
-            f"{LOG_FORMAT_ENV}={env!r} is not valid."
+            f"{FORMAT_ENV}={env!r} is not valid."
             f" Expected one of: {', '.join(sorted(LOG_FORMATS))}."
             f" Falling back to {DEFAULT_FORMAT!r}."
         ),
@@ -108,19 +142,35 @@ def resolve_format() -> LogFormat:
     return DEFAULT_FORMAT
 
 
-def resolve_level() -> LogLevel:
+def resolve_level(env_name: str = LEVEL_ENV) -> LogLevel:
     """
-    Resolve root logger level from `AMOX_LOG_LEVEL`.
+    Resolve logger level from an `AMOX_*_LEVEL` environment variable.
 
-    When the environment variable is not set, falls back to `DEFAULT_ROOT_LEVEL`.
-    Invalid values trigger an `AmoxConfigWarning` and fall back to the default.
+    When the environment variable is not set, falls back to the corresponding
+    default from `LEVEL_DEFAULTS`. Invalid values trigger an `AmoxConfigWarning`
+    and fall back to the default.
+
+    `env_name` must be a key in `LEVEL_DEFAULTS`. Defaults to `LEVEL_ENV`
+    (root logger level).
+
+    Raises:
+        ValueError: if `env_name` is not a registered level environment
+        variable.
 
     Reference:
-        - `https://docs.python.org/3/library/logging.html#logging-levels`
+        `https://docs.python.org/3/library/logging.html#logging-levels`
+
     """
-    env = os.environ.get(LOG_LEVEL_ENV)
+    if env_name not in LEVEL_DEFAULTS:
+        msg = (
+            f"{env_name!r} is not a registered level environment variable."
+            f" Expected one of: {', '.join(sorted(LEVEL_DEFAULTS))}."
+        )
+        raise ValueError(msg)
+    default = LEVEL_DEFAULTS[env_name]
+    env = os.environ.get(env_name)
     if env is None:
-        return DEFAULT_LEVEL
+        return default
     stripped = env.strip()
     normalized = stripped.upper()
     if normalized in LOG_LEVELS:
@@ -132,14 +182,14 @@ def resolve_level() -> LogLevel:
 
     warnings.warn(
         (
-            f"{LOG_LEVEL_ENV}={env!r} is not a valid log level."
+            f"{env_name}={env!r} is not a valid log level."
             f" Expected one of: {', '.join(sorted(LOG_LEVELS))}."
-            f" Falling back to {DEFAULT_LEVEL!r}."
+            f" Falling back to {default!r}."
         ),
         AmoxConfigWarning,
         stacklevel=2,
     )
-    return DEFAULT_LEVEL
+    return default
 
 
 def resolve_bool(env_name: str) -> bool | None:

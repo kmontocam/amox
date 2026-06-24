@@ -12,7 +12,7 @@ A service runs programmatically, emitting records for domain-specific events. Pr
 messages in a human-readable format for real-time inspection is necessary, yet these
 have to be processable subsequently.
 
-Produce logs semi-structured on a open stream. Let third parties do the parsing,
+Produce logs semi-structured **on a open stream**. Let third parties do the parsing,
 processing or any downstream action.
 
 ## Usage

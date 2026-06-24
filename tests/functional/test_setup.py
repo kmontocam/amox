@@ -7,7 +7,7 @@ import typing as t
 
 import pytest
 
-from amox.env import LOG_FORMAT_ENV, LOG_LEVEL_ENV
+from amox.env import FORMAT_ENV, LEVEL_ENV
 from amox.logging_ import log
 from amox.parsers import LogLineParser
 from amox.types_ import LogFormat
@@ -37,7 +37,7 @@ class TestSetup(ParsabilityTests):
     ) -> None:
         """name=... sets log level to DEBUG."""
         filename = pathlib.Path(setup_name_scope.__file__).name
-        env = {**os.environ, LOG_FORMAT_ENV: log_format}
+        env = {**os.environ, FORMAT_ENV: log_format}
         result: ScriptResult = script_runner(filename, env=env)
 
         assert result.returncode == 0
@@ -83,8 +83,8 @@ class TestSetup(ParsabilityTests):
         filename = pathlib.Path(setup_level_scope.__file__).name
         env = {
             **os.environ,
-            LOG_FORMAT_ENV: log_format,
-            LOG_LEVEL_ENV: level,
+            FORMAT_ENV: log_format,
+            LEVEL_ENV: level,
         }
         result: ScriptResult = script_runner(filename, env=env)
 
@@ -105,7 +105,7 @@ class TestSetup(ParsabilityTests):
     ) -> None:
         """Call followed after existing managed loggers does not duplicate logs."""
         filename = pathlib.Path(setup_deferred.__file__).name
-        env = {**os.environ, LOG_FORMAT_ENV: log_format}
+        env = {**os.environ, FORMAT_ENV: log_format}
         result: ScriptResult = script_runner(filename, env=env)
 
         assert result.returncode == 0
@@ -125,7 +125,7 @@ class TestSetup(ParsabilityTests):
     ) -> None:
         """Call followed after existing managed loggers produces a log warning."""
         filename = pathlib.Path(setup_deferred.__file__).name
-        env = {**os.environ, LOG_FORMAT_ENV: log_format}
+        env = {**os.environ, FORMAT_ENV: log_format}
         result: ScriptResult = script_runner(filename, env=env)
 
         assert result.returncode == 0

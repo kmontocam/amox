@@ -12,6 +12,7 @@ import warnings
 from collections import abc
 
 import amox
+from amox.env import EXISTING_LEVEL_ENV, NAMESPACE_LEVEL_ENV, resolve_level
 from amox.formatters import AmoxFormatter, create_formatter
 from amox.handlers import LiveQueueHandler, create_handler, has_handler
 from amox.types_ import (
@@ -24,16 +25,6 @@ from amox.types_ import (
     SetupOptions,
 )
 from amox.warnings_ import AmoxFormatWarning
-
-DEFAULT_EXISTING_LOGGER_LEVEL: LogLevel = "WARNING"
-"""
-Default log level on setup when viewing logs of third party packages.
-"""
-
-DEFAULT_LOGGER_LEVEL: LogLevel = "DEBUG"
-"""
-Default log level for a managed logger.
-"""
 
 log = logging.getLogger(amox.__name__)
 """
@@ -115,14 +106,14 @@ def config(**opts: t.Unpack[ConfigOptions]) -> DictConfig:
     loggers: dict[str, LoggerConfig] = {}
     # logger namespace (tree): set to DEBUG.
     if name := opts.get("name"):
-        loggers[name] = {"level": DEFAULT_LOGGER_LEVEL}
+        loggers[name] = {"level": resolve_level(NAMESPACE_LEVEL_ENV)}
 
     for entry in opts.get("loggers", []):
         if isinstance(entry, (str, types.ModuleType)):
             entry_name = (
                 entry.__name__ if isinstance(entry, types.ModuleType) else entry
             )
-            loggers[entry_name] = {"level": DEFAULT_EXISTING_LOGGER_LEVEL}
+            loggers[entry_name] = {"level": resolve_level(EXISTING_LEVEL_ENV)}
         else:
             mod = entry["module"]
             entry_name = mod.__name__ if isinstance(mod, types.ModuleType) else mod
@@ -153,7 +144,7 @@ def get_logger(
         level: proxy for `logging.Logger`'s bound `setLevel()` level parameter.
             Defaults to `'DEBUG'`.
         log_format: schema on read format. When omitted, reads from
-            `AMOX_LOG_FORMAT` environment variable, defaults to `'logfmt'`.
+            `AMOX_FORMAT` environment variable, defaults to `'logfmt'`.
         handlers: additional handlers to append into the logger besides the base
             `logging.StreamHandler`.
 
@@ -196,7 +187,7 @@ def get_logger(
 
     formatter = create_formatter(log_format, **opts)
     handlers = handlers or list[logging.Handler]()
-    level = level or DEFAULT_LOGGER_LEVEL
+    level = level or resolve_level(NAMESPACE_LEVEL_ENV)
 
     logger.setLevel(level)
 
