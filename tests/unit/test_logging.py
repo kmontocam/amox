@@ -10,7 +10,6 @@ import threading
 import time
 import types
 import typing as t
-from collections import abc
 
 import jsonschema
 import pytest
@@ -31,34 +30,13 @@ from amox.logging_ import (
     get_logger,
     setup,
 )
-from amox.types_ import FormatterOptions, LogFormat, LogLevel
+from amox.types_ import LogLevel
 from amox.warnings_ import AmoxFormatWarning
 from tests.conftest import make_record
-
-
-class SupportsFilter(t.Protocol):
-    """Protocol for filterer as a type."""
-
-    def filter(self, record: logging.LogRecord, /) -> bool | logging.LogRecord:
-        """Filter."""
-
-
-type FilterCallable = abc.Callable[[logging.LogRecord], bool | logging.LogRecord]
-"""
-Filter as callable.
-"""
+from tests.unit.conftest import FilterCallable, GetLoggerKwargs, SupportsFilter
 
 SRC_LOGGER_PREFIX = "src"
 THIRD_PARTY_LOGGER = "thirdparty"
-
-
-class GetLoggerKwargs(FormatterOptions, total=False):
-    """Keyword arguments for `get_logger()`."""
-
-    level: LogLevel | int
-    log_format: LogFormat | None
-    handlers: list[logging.Handler]
-    queue: bool
 
 
 class TestConfig:
@@ -688,9 +666,10 @@ class TestSetup:
         """`setup(loggers=[...])` sets the named logger to default level."""
         setup(loggers=[reference])
 
+        log_levels_map = logging.getLevelNamesMapping()
         assert (
             logging.getLogger(name).level
-            == logging.getLevelNamesMapping()[resolve_level(EXISTING_LEVEL_ENV)]
+            == log_levels_map[resolve_level(EXISTING_LEVEL_ENV)]
         )
 
     @pytest.mark.parametrize(
@@ -710,7 +689,8 @@ class TestSetup:
         """loggers=[{"module": ..., "level": "ERROR"}] sets explicit level."""
         setup(loggers=[{"module": reference, "level": level}])
 
-        assert logging.getLogger(name).level == logging.getLevelNamesMapping()[level]
+        log_levels_map = logging.getLevelNamesMapping()
+        assert logging.getLogger(name).level == log_levels_map[level]
 
     def test_name_scopes(self) -> None:
         """name=... sets logger to `AMOX_NAMESPACE_LEVEL`, root to `AMOX_LEVEL`."""
@@ -721,7 +701,7 @@ class TestSetup:
             logging.getLogger(SRC_LOGGER_PREFIX).level
             == log_levels_map[resolve_level(NAMESPACE_LEVEL_ENV)]
         )
-        assert logging.root.level == logging.getLevelNamesMapping()[resolve_level()]
+        assert logging.root.level == log_levels_map[resolve_level()]
 
     def test_removes_get_logger_handlers(self) -> None:
         """Removes handlers from `get_logger`-configured loggers."""

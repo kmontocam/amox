@@ -20,6 +20,11 @@ LOG_LEVELS: set[LogLevel] = {
 Log level names.
 """
 
+LOG_FORMATS: set[LogFormat] = {"json", "logfmt"}
+"""
+Valid log format names.
+"""
+
 BOOL_TRUTHY: frozenset[t.Literal["1", "true"]] = frozenset({"1", "true"})
 """
 Accepted truthy values for boolean environment variables.
@@ -61,11 +66,6 @@ EXISTING_LEVEL_ENV = "AMOX_EXISTING_LEVEL"
 """
 Convention environment variable name to configure the level of third-party
 loggers (`loggers=` option in `setup()`/`config()`).
-"""
-
-LOG_FORMATS: set[LogFormat] = {"json", "logfmt"}
-"""
-Valid log format identifiers for `AMOX_FORMAT`.
 """
 
 DEFAULT_FORMAT: LogFormat = "logfmt"

@@ -165,7 +165,7 @@ class TestResolveLevel:
     ) -> None:
         """Unknown `env_name` raises `ValueError`."""
         monkeypatch.setenv("AMOX_UNKNOWN_LEVEL", "DEBUG")
-        with pytest.raises(ValueError, match="not a registered level"):
+        with pytest.raises(ValueError, match=", ".join(sorted(LEVEL_DEFAULTS))):
             resolve_level("AMOX_UNKNOWN_LEVEL")
 
 
